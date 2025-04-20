@@ -3,11 +3,11 @@ title: "Buspirone in children and adolescents with anxiety: a review and Bayesia
 collection: publications
 category: manuscripts
 permalink: /publication/2018-01-01-buspirone
-excerpt: 'This paper is about fixing template issue #693.'
 date: 2018-01-01
-venue: 'Journal of child and adolescent psychopharmacology'
+venue: 'Journal of Child and Adolescent Psychopharmacology'
 paperurl: 'http://academicpages.github.io/files/buspirone_cams.pdf'
-citation: 'Strawn, Jeffrey R., Jeffrey A. Mills, Gary J. Cornwall, Sarah A. Mossman, Sara T. Varney, Brooks R. Keeshin, and Paul E. Croarkin. &quot;Buspirone in children and adolescents with anxiety: a review and Bayesian analysis of abandoned randomized controlled trials.&quot; <i>Journal of child and adolescent psychopharmacology</i>. 28, no. 1 (2018): 2-9.'
+bibtexurl: 'http://grycrnwll.github.io/files/buspirone_camsbib.bib'
+citation: 'Strawn, Jeffrey R., Jeffrey A. Mills, Gary J. Cornwall, Sarah A. Mossman, Sara T. Varney, Brooks R. Keeshin, and Paul E. Croarkin. &quot;Buspirone in children and adolescents with anxiety: a review and Bayesian analysis of abandoned randomized controlled trials.&quot; <i>Journal of Child and Adolescent Psychopharmacology</i>. 28, no. 1 (2018): 2-9.'
 ---
 
 <b>Abstract:</b> An increasing number of abandoned clinical trials have forestalled efforts to advance the evidence base for the
