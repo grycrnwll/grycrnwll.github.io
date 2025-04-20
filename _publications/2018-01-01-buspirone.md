@@ -1,7 +1,7 @@
 ---
 title: "Buspirone in children and adolescents with anxiety: a review and Bayesian analysis of abandoned randomized controlled trials"
 collection: publications
-category: conferences
+category: manuscripts
 permalink: /publication/2018-01-01-buspirone
 excerpt: 'This paper is about fixing template issue #693.'
 date: 2018-01-01
