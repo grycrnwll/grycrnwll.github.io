@@ -1,14 +1,10 @@
 ---
 permalink: /
-title: "About Gary Cornwall"
+title: "About Dr. Gary Cornwall"
 author_profile: true
 redirect_from: 
   - /about/
   - /about.html
 ---
 
-Gary Cornwall is currently a Senior Research Economist at the Bureau of Economic Analysis and Adjunct Professor of Economics at George Washington University.
----
-Gary is an accomplished Economist and Data Scientist with PhD in Economics from the University of Cincinnati. He has extensive experience in applying advanced econometric and machine learning techniques to solve complex problems in both the public and private sectors. Additionally, he has a proven track record of novel economic research, published in peer-reviewed journals, in areas such as hypothesis testing, real estate economics, spatial econometrics, causal inference, and time series analysis.
----
-His current projects focus on valuing land underneath private structures using big data, now-casting the distribution of personal income and associated inequality metrics, and applying machine learning to foundational time series hypothesis tests. 
+Gary is an Economist and Data Scientist with a Ph.D. in Economics from the University of Cincinnati. His research in areas such as causal inference and time series analysis contribute to the understanding of complex systems and improving data-driven decision-making frameworks. Gary is an expert communicator who has presented academic and industry work worldwide in a variety of settings. For the last five years, he has served as an instructor of time series econometrics at George Washington University and is among the top-rated instructors in the program. 
