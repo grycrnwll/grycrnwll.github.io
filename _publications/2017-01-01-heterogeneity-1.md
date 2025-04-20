@@ -10,7 +10,7 @@ excerpt: 'In this paper a mixture distribution model is extended to include spat
  spatial-mix estimation procedure is always able to recover the true parameters. As an illustration, a basic
  hedonic price model is investigated that includes sub-groups of data with heterogeneous coefficients in addition
  to spatially clustered elements.'
-date: 2017
+date: 2017-01-01
 venue: 'Regional Science and Urban Economics'
 paperurl: 'http://grycrnwll.github.io/files/heterogeneity.pdf'
 bibtexurl: 'http://grycrnwll.github.io/files/heterogeneitybib.bib'
