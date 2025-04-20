@@ -9,9 +9,9 @@
 # Basic Site Settings
 locale                   : "en-US"
 site_theme               : "default"
-title                    : "Gary Cornwall, Ph.D."
+title                    : "Gary Cornwall"
 title_separator          : "-"
-name                     : &name "Gary Cornwall"
+name                     : &name "Gary Cornwall, Ph.D."
 description              : &description "Senior Research Economist"
 url                      : https://grycrnwll.github.io # the base hostname & protocol for your site e.g. "https://[your GitHub username].github.io"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
@@ -25,7 +25,7 @@ author:
   avatar           : "profile.jpg"
   name             : "Gary Cornwall"
   pronouns         : "He/Him"  
-  bio              : "Short biography for the left-hand sidebar"
+  bio              : "Senior Research Economist"
   location         : "Washington, DC  USA"
   employer         : "U.S. Bureau of Economic Analysis"
   uri              : # URL
@@ -50,7 +50,7 @@ author:
   stackoverflow    : # User number or user number and name (i.e., use "1" or "1/jeff-atwood")    
 
   # Social media
-  bluesky          : "bsky.app" # Replace this with you Bluesky username
+  bluesky          : "@garycornwall.bsky.social" # Replace this with you Bluesky username
   facebook         : # Username
   flickr           : # Username
   foursquare       : # Username
