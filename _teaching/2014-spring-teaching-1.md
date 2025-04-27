@@ -1,11 +1,11 @@
 ---
-title: "Teaching experience 1"
+title: "Time Series Econometrics"
 collection: teaching
-type: "Undergraduate course"
+type: "Graduate Course"
 permalink: /teaching/2014-spring-teaching-1
-venue: "University 1, Department"
-date: 2014-01-01
-location: "City, Country"
+venue: "George Washington University, Department of Economics""
+#date: 2014-01-01
+location: "Washington DC, USA"
 ---
 
 This is a description of a teaching experience. You can use markdown like any other post.
