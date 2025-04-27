@@ -11,8 +11,8 @@ main:
   - title: "Publications"
     url: /publications/
 
-  - title: "Working Papers & Projects"
-    url: /working/
+#  - title: "Working Papers & Projects"
+#    url: /working/
 
 #  - title: "Talks"
 #    url: /talks/    
