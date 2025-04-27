@@ -4,7 +4,7 @@ collection: teaching
 type: "Graduate Course"
 permalink: /teaching/topics_ml_gwu
 venue: "George Washington University, Department of Economics"
-#date: 2015-01-01
+date: 
 location: "Washington, DC USA"
 ---
 
