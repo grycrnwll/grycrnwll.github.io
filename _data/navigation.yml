@@ -8,21 +8,20 @@
 #      Markdown formatted page while the second is generated using JSON.
 
 main:
-
-  - title: "CV"
-    url: /files/cornwall_cv.pdf
-    
   - title: "Publications"
     url: /publications/
 
   - title: "Working Papers & Projects"
     url: /working/
 
-  - title: "Talks"
-    url: /talks/    
+#  - title: "Talks"
+#    url: /talks/    
 
   - title: "Teaching"
     url: /teaching/    
+
+  - title: "CV"
+    url: /files/cornwall_cv.pdf
     
 
         
