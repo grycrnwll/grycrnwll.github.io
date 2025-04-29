@@ -11,14 +11,14 @@ main:
   - title: "Publications"
     url: /publications/
 
-#  - title: "Working Papers & Projects"
-#    url: /working/
+  - title: "Working Papers & Projects"
+    url: /working/
 
 #  - title: "Talks"
 #    url: /talks/    
 
-#  - title: "Teaching"
-#    url: /teaching/    
+  - title: "Teaching"
+    url: /teaching/    
 
   - title: "CV"
     url: /files/cornwall_cv.pdf
