@@ -268,7 +268,7 @@ defaults:
   # _working
   - scope:
       path: ""
-      type: working
+      type: publications
     values:
       layout: single
       author_profile: true
