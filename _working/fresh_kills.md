@@ -1,6 +1,6 @@
 ---
 title: "It's The Smell: How Resolving Uncertainty about Local Disamenties Affects the Housing Market"
-collection: publications
+collection: working
 category: manuscripts
 permalink: /working/fresh_kills
 date: 2025-03-13
