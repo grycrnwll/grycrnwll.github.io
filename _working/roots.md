@@ -1,5 +1,5 @@
 ---
-title: "Roots from Trees: A Machine Learning Approach to Unit Root Detection""
+title: "Roots from Trees: A Machine Learning Approach to Unit Root Detection"
 collection: working
 category: manuscripts
 permalink: /working/roots
