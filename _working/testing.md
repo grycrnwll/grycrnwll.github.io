@@ -2,7 +2,7 @@
 title: "Alloy Inference: Tests of a Single Null"
 collection: working
 category: manuscripts
-permalink: /working/darkside
+permalink: /working/alloy
 paperurl: 'http://grycrnwll.github.io/files/multtesting.pdf'
 date: 2024-07-01
 status: 'Editing'
