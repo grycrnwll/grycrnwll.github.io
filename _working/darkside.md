@@ -3,7 +3,7 @@ title: "The Dark Side of the Moon: Searching for the Other Half of Seasonality"
 collection: working
 category: manuscripts
 permalink: /working/darkside
-paperurl: 'http://grycrnwll.github.io/files/darkside.pdf'
+paperurl: 'http://grycrnwll.github.io/files/darksideseasonality.pdf'
 date: 2020-05-26
 status: 'Editing'
 ---
