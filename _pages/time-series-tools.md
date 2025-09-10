@@ -25,7 +25,7 @@ The Stationarity Trainer is an interactive educational tool designed to help stu
 - Interactive plots showing original series, differenced series, and test statistics
 - Educational explanations of when and why to use different approaches
 
-[**Launch Stationarity Trainer →**](/tools/stationarity-trainer.html)
+[**Launch Stationarity Trainer →**](_tools/stationarity-trainer.html)
 
 ---
 
