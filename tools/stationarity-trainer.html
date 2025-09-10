@@ -6,486 +6,261 @@
   <title>Stationarity Trainer (Prototype)</title>
   <style>
     /* Minimalist look ~ ggplot2 theme_bw */
-    :root {
-      --bg: #ffffff;
-      --fg: #111111;
-      --muted: #666666;
-      --accent: #1f77b4;
-      --ok: #2ca02c;
-      --bad: #d62728;
-      --panel: #f7f7f7;
-      --grid: #e6e6e6;
-    }
-    html, body { height: 100%; }
-    body {
-      margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell,
-      Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      background: var(--bg); color: var(--fg);
-    }
-    header { border-bottom: 1px solid #ccc; padding: 12px 16px; }
-    h1 { font-size: 20px; margin: 0 0 6px 0; font-weight: 600; }
-    .sub { color: var(--muted); font-size: 13px; }
-    main { display: grid; grid-template-columns: 320px 1fr 360px; gap: 12px; padding: 12px; }
-    .card { background: var(--panel); border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
-    .controls label { display:block; font-size: 12px; color: var(--muted); margin-top: 6px; }
-    .controls input[type="number"], .controls input[type="text"], .controls select { width: 100%; padding: 6px; border: 1px solid #bbb; border-radius: 6px; font-size: 13px; background: #fff; color: var(--fg); }
-    .controls .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    button { padding: 8px 10px; border:1px solid #333; background:#fff; color:#111; border-radius:6px; cursor:pointer; font-weight:600; }
-    button.primary { background: var(--fg); color: #fff; }
-    button.good { border-color: var(--ok); color: var(--ok); }
-    button.bad { border-color: var(--bad); color: var(--bad); }
-    .stack { display:flex; flex-direction: column; gap: 8px; }
-    .plots { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .plot { background:#fff; border:1px solid #bbb; border-radius:6px; padding:8px; }
-    .plot canvas { width:100%; height:200px; display:block; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    .muted { color: var(--muted); }
-    .rowline { display:flex; gap:8px; align-items: center; flex-wrap: wrap; }
-    .score { font-weight:700; }
-    details { background:#fff; border:1px solid #bbb; border-radius:6px; padding:6px 8px; }
-    .label { font-size: 12px; color: var(--muted); }
-    .kv { display:grid; grid-template-columns: 1fr auto; gap: 8px; }
-    .kv div { padding: 2px 0; border-bottom: 1px dotted #ddd; }
-    .pill { display:inline-block; padding:2px 6px; border:1px solid #bbb; border-radius:999px; font-size:12px; background:#fff; }
-    .footer { font-size: 12px; color: var(--muted); padding: 8px 16px 16px; }
+    :root { --bg:#fff; --fg:#111; --muted:#666; --panel:#f7f7f7; }
+    html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;background:var(--bg);color:var(--fg)}
+    header{border-bottom:1px solid #ccc;padding:12px 16px}
+    h1{font-size:20px;margin:0 0 6px 0;font-weight:600}
+    .sub{color:var(--muted);font-size:13px}
+    main{display:grid;grid-template-columns:320px 1fr 360px;gap:12px;padding:12px}
+    .card{background:var(--panel);border:1px solid #ddd;border-radius:8px;padding:12px}
+    .controls label{display:block;font-size:12px;color:var(--muted);margin-top:6px}
+    .controls input[type="number"],.controls input[type="text"]{width:100%;padding:6px;border:1px solid #bbb;border-radius:6px;font-size:13px;background:#fff;color:var(--fg)}
+    .controls .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    button{padding:8px 10px;border:1px solid #333;background:#fff;color:#111;border-radius:6px;cursor:pointer;font-weight:600}
+    button.primary{background:#111;color:#fff}
+    button.good{border-color:#2ca02c;color:#2ca02c}
+    button.bad{border-color:#d62728;color:#d62728}
+    .stack{display:flex;flex-direction:column;gap:8px}
+    .plots{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .plot{background:#fff;border:1px solid #bbb;border-radius:6px;padding:8px}
+    .plot canvas{width:100%;height:200px;display:block}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace}
+    .label{font-size:12px;color:var(--muted)}
+    .kv{display:grid;grid-template-columns:1fr auto;gap:8px}
+    .kv div{padding:2px 0;border-bottom:1px dotted #ddd}
+    .pill{display:inline-block;padding:2px 6px;border:1px solid #bbb;border-radius:999px;font-size:12px;background:#fff}
   </style>
 </head>
 <body>
-  <header>
-    <h1>Stationarity Trainer (Prototype)</h1>
-    <div class="sub">ARMA vs ARIMA practice • weak stationarity focus • all-compute client-side</div>
-  </header>
-  <main>
-    <!-- Left: Controls -->
-    <section class="card controls">
-      <div class="stack">
-        <div class="rowline">
-          <button id="btn-generate" class="primary">Generate series</button>
-          <button id="btn-same" title="Regenerate with same DGP">Re-run same</button>
-        </div>
-        <div class="rowline">
-          <span class="label">Your answer:</span>
-          <button id="btn-stationary" class="good">Stationary (I(0))</button>
-          <button id="btn-nonstationary" class="bad">Non-stationary</button>
-        </div>
-        <div><span class="label">Session accuracy:</span>
-          <div class="score" id="score">0 / 0 (—)</div>
-        </div>
-        <details>
-          <summary>Advanced options</summary>
-          <label>Sample size T
-            <input type="number" id="inp-T" min="100" max="2000" step="50" value="200" />
+<header>
+  <h1>Stationarity Trainer (Prototype) — Near-Boundary</h1>
+  <div class="sub">Stationary pool uses AR polynomials with roots just outside the unit circle (|φ|≈0.85–0.99 for AR(1)); non-stationary remains ARIMA(p,1,q).</div>
+</header>
+<main>
+  <section class="card controls">
+    <div class="stack">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button id="btn-generate" class="primary">Generate series</button>
+        <button id="btn-same" title="Regenerate with same DGP">Re-run same</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="label">Your answer:</span>
+        <button id="btn-stationary" class="good">Stationary (I(0))</button>
+        <button id="btn-nonstationary" class="bad">Non-stationary</button>
+      </div>
+      <div><span class="label">Session accuracy:</span>
+        <div class="mono" id="score" style="font-weight:700">0 / 0 (—)</div>
+      </div>
+      <details>
+        <summary>Advanced options</summary>
+        <label>Sample size T
+          <input type="number" id="inp-T" min="100" max="2000" step="50" value="200" />
+        </label>
+        <div class="row">
+          <label>p(NS) probability
+            <input type="number" id="inp-pns" min="0" max="1" step="0.05" value="0.5" />
           </label>
-          <div class="row">
-            <label>p(NS) probability
-              <input type="number" id="inp-pns" min="0" max="1" step="0.05" value="0.5" />
-            </label>
-            <label>Seed (optional)
-              <input type="text" id="inp-seed" placeholder="auto" />
-            </label>
-          </div>
-          <div class="row">
-            <label>Max AR p (≤3)
-              <input type="number" id="inp-pmax" min="0" max="3" step="1" value="3" />
-            </label>
-            <label>Max MA q (≤2)
-              <input type="number" id="inp-qmax" min="0" max="2" step="1" value="2" />
-            </label>
-          </div>
-        </details>
-        <div class="muted" style="font-size:12px">Spec: Stationary pool ARMA(p,q). Non-stationary pool ARIMA(p,1,q). Parameters drawn to satisfy admissibility; ADF uses intercept (no trend) with lag selection by AIC up to Schwert cap.</div>
-      </div>
-    </section>
+          <label>Seed (optional)
+            <input type="text" id="inp-seed" placeholder="auto" />
+          </label>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:8px">
+          <input type="checkbox" id="inp-drift" checked /> Allow drift term α
+        </label>
+        <div class="row">
+          <label>Max AR p (≤3)
+            <input type="number" id="inp-pmax" min="0" max="3" step="1" value="3" />
+          </label>
+          <label>Max MA q (≤2)
+            <input type="number" id="inp-qmax" min="0" max="2" step="1" value="2" />
+          </label>
+        </div>
+      </details>
+      <div class="label">Spec: stationary pool ARMA(p,q) with near-boundary AR; non-stationary pool ARIMA(p,1,q). ADF intercept-only; lag via AIC under Schwert cap.</div>
+    </div>
+  </section>
 
-    <!-- Middle: Plots -->
-    <section class="card">
-      <div class="plots">
-        <div class="plot"><div class="label">Levels y<sub>t</sub></div><canvas id="plot-levels"></canvas></div>
-        <div class="plot"><div class="label">First differences Δy<sub>t</sub></div><canvas id="plot-diff"></canvas></div>
-        <div class="plot"><div class="label">ACF (levels)</div><canvas id="acf-levels"></canvas></div>
-        <div class="plot"><div class="label">ACF (first differences)</div><canvas id="acf-diff"></canvas></div>
-        <div class="plot"><div class="label">PACF (levels)</div><canvas id="pacf-levels"></canvas></div>
-        <div class="plot"><div class="label">PACF (first differences)</div><canvas id="pacf-diff"></canvas></div>
-      </div>
-    </section>
+  <section class="card">
+    <div class="plots">
+      <div class="plot"><div class="label">Levels y<sub>t</sub></div><canvas id="plot-levels"></canvas></div>
+      <div class="plot"><div class="label">First differences Δy<sub>t</sub></div><canvas id="plot-diff"></canvas></div>
+      <div class="plot"><div class="label">ACF (levels)</div><canvas id="acf-levels"></canvas></div>
+      <div class="plot"><div class="label">ACF (first differences)</div><canvas id="acf-diff"></canvas></div>
+      <div class="plot"><div class="label">PACF (levels)</div><canvas id="pacf-levels"></canvas></div>
+      <div class="plot"><div class="label">PACF (first differences)</div><canvas id="pacf-diff"></canvas></div>
+    </div>
+  </section>
 
-    <!-- Right: Diagnostics / Reveal -->
-    <section class="card">
-      <div class="stack">
-        <div>
-          <div class="label">ADF test (intercept only)</div>
-          <div class="mono" id="adf-eq" style="font-size:12px; white-space: pre-wrap;">Δy_t = α + ρ y_{t-1} + Σ γ_i Δy_{t-i} + ε_t</div>
-          <div class="kv mono" id="adf-out"></div>
-        </div>
-        <div>
-          <div class="label">Variance ratio</div>
-          <div class="kv mono" id="vr-out"></div>
-        </div>
-        <div>
-          <div class="label">Truth (revealed after answer)</div>
-          <div id="truth" class="mono"></div>
-        </div>
-        <div>
-          <button id="btn-reset">Reset session</button>
-          <button id="btn-download">Download session CSV</button>
-        </div>
+  <section class="card">
+    <div class="stack">
+      <div>
+        <div class="label">ADF test (intercept only)</div>
+        <div class="mono" id="adf-eq" style="font-size:12px;white-space:pre-wrap">Δy_t = α + ρ y_{t-1} + Σ γ_i Δy_{t-i} + ε_t</div>
+        <div class="kv mono" id="adf-out"></div>
       </div>
-    </section>
-  </main>
-  <div class="footer">Prototype: no external libs, plain Canvas drawing; results may differ slightly from R due to finite-precision and simplified ADF.
-  </div>
+      <div>
+        <div class="label">Variance ratio</div>
+        <div class="kv mono" id="vr-out"></div>
+      </div>
+      <div>
+        <div class="label">Truth (revealed after answer)</div>
+        <div id="truth" class="mono"></div>
+      </div>
+      <div>
+        <button id="btn-reset">Reset session</button>
+        <button id="btn-download">Download session CSV</button>
+      </div>
+    </div>
+  </section>
+</main>
 
 <script>
 /******************** Utilities ********************/
 function mulberry32(a){return function(){var t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296}}
 function hashString(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=(h<<13)|(h>>>19);}return (h>>>0)}
 let rng = mulberry32(123456789);
-function setSeed(seedStr){ if(!seedStr){rng = mulberry32((Math.random()*1e9)|0); return; } rng = mulberry32(hashString(seedStr)); }
-function rnorm(){ // Box-Muller
-  let u=0,v=0; while(u===0) u=rng(); while(v===0) v=rng(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
-}
-function choice(arr){return arr[Math.floor(rng()*arr.length)]}
-
-/******************** Linear algebra & stats ********************/
+function setSeed(seedStr){ if(!seedStr){rng = mulberry32((Math.random()*1e9)|0); return;} rng = mulberry32(hashString(seedStr)); }
+function rnorm(){ let u=0,v=0; while(u===0) u=rng(); while(v===0) v=rng(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
 function mean(a){let s=0; for(const x of a) s+=x; return s/a.length}
 function variance(a){const m=mean(a); let s=0; for(const x of a){const d=x-m; s+=d*d;} return s/(a.length-1)}
 function sd(a){return Math.sqrt(variance(a))}
 function diff(a){const d=[]; for(let i=1;i<a.length;i++) d.push(a[i]-a[i-1]); return d}
-function acf(x, maxLag){ // biased
-  const n=x.length, mx=mean(x); let ac=new Array(maxLag+1).fill(0), denom=0;
-  for(let t=0;t<n;t++){const d=x[t]-mx; denom+=d*d;}
-  for(let k=0;k<=maxLag;k++){
-    let num=0; for(let t=k;t<n;t++){ num += (x[t]-mx)*(x[t-k]-mx); }
-    ac[k]= num/denom;
+function acf(x,maxLag){ const n=x.length,mx=mean(x); let ac=new Array(maxLag+1).fill(0),den=0; for(let t=0;t<n;t++){const d=x[t]-mx; den+=d*d;} for(let k=0;k<=maxLag;k++){let num=0; for(let t=k;t<n;t++){ num+=(x[t]-mx)*(x[t-k]-mx);} ac[k]=num/den;} return ac; }
+function pacf(x,maxLag){ const r=acf(x,maxLag); const phi=Array.from({length:maxLag+1},()=>Array(maxLag+1).fill(0)); const sigma=Array(maxLag+1).fill(0); sigma[0]=r[0]; if(sigma[0]===0) return Array(maxLag+1).fill(0); for(let k=1;k<=maxLag;k++){ let sum=0; for(let j=1;j<k;j++) sum += phi[k-1][j]*r[k-j]; const phikk=(r[k]-sum)/sigma[k-1]; phi[k][k]=phikk; for(let j=1;j<k;j++) phi[k][j]=phi[k-1][j]-phikk*phi[k-1][k-j]; sigma[k]=sigma[k-1]*(1-phikk*phikk);} const out=new Array(maxLag+1).fill(0); out[0]=1; for(let k=1;k<=maxLag;k++) out[k]=phi[k][k]; return out; }
+function OLS(X,y){ const n=y.length,k=X[0].length; const XtX=Array.from({length:k},()=>Array(k).fill(0)); const Xty=Array(k).fill(0); for(let i=0;i<n;i++){ const xi=X[i], yi=y[i]; for(let a=0;a<k;a++){ Xty[a]+=xi[a]*yi; for(let b=0;b<k;b++) XtX[a][b]+=xi[a]*xi[b]; } } const A=XtX.map(r=>r.slice()); const b=Xty.slice(); for(let i=0;i<k;i++){ A[i].push(b[i]); } for(let i=0;i<k;i++){ let m=i; for(let r=i+1;r<k;r++){ if(Math.abs(A[r][i])>Math.abs(A[m][i])) m=r; } if(Math.abs(A[m][i])<1e-12) return {beta:Array(k).fill(NaN),resid:Array(n).fill(NaN),s2:NaN,vcov:null}; if(m!==i){ const tmp=A[i]; A[i]=A[m]; A[m]=tmp; } const piv=A[i][i]; for(let c=i;c<=k;c++) A[i][c]/=piv; for(let r=0;r<k;r++) if(r!==i){ const f=A[r][i]; for(let c=i;c<=k;c++) A[r][c]-=f*A[i][c]; } } const beta=A.map(row=>row[k]); const resid=new Array(n).fill(0); for(let i=0;i<n;i++){ let fit=0; for(let j=0;j<k;j++) fit+=X[i][j]*beta[j]; resid[i]=y[i]-fit; } const s2=resid.reduce((a,c)=>a+c*c,0)/(n-k); const XtXinv=A.map(row=>row.slice(0,k)); const vcov=XtXinv.map(row=>row.map(v=>v*s2)); return {beta,resid,s2,vcov}; }
+
+/******************** Near-boundary AR construction ********************/
+function makePolyFromRoots(roots){ // roots: {re,im}; returns real coeffs for P(z)=∏(1 - z/r_i)
+  let coeffs=[1];
+  for(const r of roots){
+    const denom = r.re*r.re + r.im*r.im;
+    const c_re = r.re/denom; // 1/r
+    const c_im = -r.im/denom;
+    const next = new Array(coeffs.length+1).fill(0).map(()=>({re:0,im:0}));
+    for(let k=0;k<coeffs.length;k++){
+      const a_re = (typeof coeffs[k]==='number')? coeffs[k] : coeffs[k].re;
+      const a_im = (typeof coeffs[k]==='number')? 0 : coeffs[k].im;
+      // copy a*z^k
+      next[k].re += a_re; next[k].im += a_im;
+      // add -c * a * z^{k+1}
+      next[k+1].re += -(a_re*c_re - a_im*c_im);
+      next[k+1].im += -(a_re*c_im + a_im*c_re);
+    }
+    coeffs = next.map(z => (Math.abs(z.im) < 1e-10 ? z.re : z));
   }
-  return ac;
+  return coeffs.map(v => (typeof v==='number'? v : v.re));
 }
-function pacf(x, maxLag){ // Durbin-Levinson
-  const n=x.length; const r=acf(x, maxLag);
-  const phi=Array.from({length:maxLag+1}, ()=>Array(maxLag+1).fill(0));
-  const sigma=Array(maxLag+1).fill(0);
-  sigma[0]=r[0];
-  if (sigma[0]===0){return Array(maxLag+1).fill(0)}
-  for(let k=1;k<=maxLag;k++){
-    let sum=0; for(let j=1;j<k;j++) sum += phi[k-1][j]*r[k-j];
-    let phikk = (r[k]-sum)/sigma[k-1];
-    phi[k][k]=phikk;
-    for(let j=1;j<k;j++) phi[k][j]=phi[k-1][j]-phikk*phi[k-1][k-j];
-    sigma[k] = sigma[k-1]*(1-phikk*phikk);
-  }
-  const out = new Array(maxLag+1).fill(0); out[0]=1; for(let k=1;k<=maxLag;k++) out[k]=phi[k][k]; return out;
-}
-function OLS(X, y){ // returns {beta, resid, s2, vcov}
-  // X: n x k, y: n
-  const n=y.length, k=X[0].length;
-  // compute XtX and Xty
-  const XtX = Array.from({length:k},()=>Array(k).fill(0));
-  const Xty = Array(k).fill(0);
-  for(let i=0;i<n;i++){
-    const xi=X[i]; const yi=y[i];
-    for(let a=0;a<k;a++){
-      Xty[a]+= xi[a]*yi;
-      for(let b=0;b<k;b++) XtX[a][b]+= xi[a]*xi[b];
+function drawNearBoundaryAR(p){
+  if(p===0) return [];
+  const roots=[];
+  const addRealNear = ()=>{
+    const sign = (rng()<0.5? 1 : -1);
+    const phiMag = 0.85 + rng()*(0.99-0.85); // |phi|∈[0.85,0.99]
+    const phi = sign*phiMag;
+    const z = 1/phi; // root just outside unit circle
+    roots.push({re:z, im:0});
+  };
+  const addComplexNear = ()=>{
+    const r = 1.01 + rng()*(1.18-1.01);
+    const theta = 0.2*Math.PI + rng()*0.6*Math.PI; // avoid tiny angles
+    const re = r*Math.cos(theta), im = r*Math.sin(theta);
+    roots.push({re,im}); roots.push({re,im:-im});
+  };
+  if(p===1){ addRealNear(); }
+  else { if(rng()<0.5 && p>=2) addComplexNear(); else addRealNear(); }
+  // fill remaining roots farther from boundary
+  const need = p - roots.length; let i=0;
+  while(i<need){
+    if(need - i >= 2 && rng()<0.6){
+      const r = 1.3 + rng()*0.7; const th = rng()*Math.PI; const re=r*Math.cos(th), im=r*Math.sin(th);
+      roots.push({re,im}); roots.push({re,im:-im}); i+=2;
+    } else {
+      const sign = (rng()<0.5?1:-1); const r = (1.2 + rng()*0.8)*sign; roots.push({re:r, im:0}); i+=1;
     }
   }
-  // solve XtX * beta = Xty via Gaussian elimination
-  const A = XtX.map(row=>row.slice());
-  const b = Xty.slice();
-  // augment
-  for(let i=0;i<k;i++){ A[i].push(b[i]); }
-  // elimination
-  for(let i=0;i<k;i++){
-    // pivot
-    let maxRow=i; for(let r=i+1;r<k;r++){ if(Math.abs(A[r][i])>Math.abs(A[maxRow][i])) maxRow=r; }
-    if (Math.abs(A[maxRow][i])<1e-12) { return {beta:Array(k).fill(NaN), resid:Array(n).fill(NaN), s2:NaN, vcov:null} }
-    if(maxRow!==i){ const tmp=A[i]; A[i]=A[maxRow]; A[maxRow]=tmp; }
-    // normalize
-    const piv=A[i][i]; for(let c=i;c<=k;c++) A[i][c]/=piv;
-    // eliminate others
-    for(let r=0;r<k;r++) if(r!==i){ const f=A[r][i]; for(let c=i;c<=k;c++) A[r][c]-=f*A[i][c]; }
-  }
-  const beta=A.map(row=>row[k]);
-  // residuals
-  const resid = new Array(n).fill(0);
-  for(let i=0;i<n;i++){
-    let fit=0; for(let j=0;j<k;j++) fit+= X[i][j]*beta[j]; resid[i]=y[i]-fit; }
-  const s2 = resid.reduce((a,c)=>a+c*c,0)/(n-k);
-  // vcov = s2 * (XtX^{-1}); we already have inverse as A[0..k-1][0..k-1]
-  const XtXinv = A.map(row=>row.slice(0,k));
-  const vcov = XtXinv.map(row=>row.map(v=>v*s2));
-  return {beta, resid, s2, vcov};
+  const coeffs = makePolyFromRoots(roots); // 1 + a1 z + ... + ap z^p
+  const phi=[]; for(let k=1;k<coeffs.length;k++) phi.push(-coeffs[k]);
+  return phi;
 }
 
-/******************** DGP generation ********************/
-function rootsOutsideUnitCircle(coeffs){ // coeffs for AR: [1, -phi1, -phi2, ...]
-  // naive root finder via Durand–Kerner; small p only (≤3)
-  const p = coeffs.length-1;
-  if(p===0) return true;
-  // polynomial: a0 + a1 z + ... + ap z^p
-  const a = coeffs.slice();
-  // initial guesses on unit circle
-  let z = []; const R=1;
-  for(let k=0;k<p;k++){ const angle=2*Math.PI*(k+1)/p; z.push({re:R*Math.cos(angle), im:R*Math.sin(angle)}); }
-  function evalPoly(zc){ let re=0, im=0; let zr=1, zi=0; for(let i=0;i<=p;i++){ // a[i]*z^i
-      re += a[i]*zr - 0*zi; // a[i] real
-      // update z^i -> z^{i+1}
-      const nzr = zr*zc.re - zi*zc.im; const nzi = zr*zc.im + zi*zc.re; zr=nzr; zi=nzi; }
-    return {re, im}; }
-  for(let iter=0;iter<50;iter++){
-    for(let i=0;i<p;i++){
-      let num=evalPoly(z[i]);
-      // denom = Π_{j≠i} (z_i - z_j)
-      let denom={re:1, im:0};
-      for(let j=0;j<p;j++) if(j!==i){ const dr=z[i].re - z[j].re, di=z[i].im - z[j].im;
-        const tr=denom.re*dr - denom.im*di; const ti=denom.re*di + denom.im*dr; denom={re:tr, im:ti}; }
-      // z_i <- z_i - num/denom
-      const den2 = denom.re*denom.re + denom.im*denom.im;
-      const qr = (num.re*denom.re + num.im*denom.im)/den2;
-      const qi = (num.im*denom.re - num.re*denom.im)/den2;
-      z[i] = {re: z[i].re - qr, im: z[i].im - qi};
-    }
-  }
-  // check |1/root| < 1  => |root| > 1 for AR poly (1 - φ1 z - ... - φp z^p)=0 in backshift z
-  return z.every(r => Math.hypot(r.re, r.im) > 1+1e-6);
+/******************** Remaining DGP helpers ********************/
+function rootsOutsideUnitCircle(coeffs){
+  const p = coeffs.length-1; if(p===0) return true; const a=coeffs.slice(); let z=[]; const R=1;
+  for(let k=0;k<p;k++){ const ang=2*Math.PI*(k+1)/p; z.push({re:R*Math.cos(ang), im:R*Math.sin(ang)}); }
+  function evalPoly(zc){ let re=0, im=0; let zr=1, zi=0; for(let i=0;i<=p;i++){ re += a[i]*zr; const nzr=zr*zc.re - zi*zc.im; const nzi=zr*zc.im + zi*zc.re; zr=nzr; zi=nzi; } return {re,im}; }
+  for(let it=0;it<40;it++) for(let i=0;i<p;i++){ let num=evalPoly(z[i]); let denom={re:1,im:0}; for(let j=0;j<p;j++) if(j!==i){ const dr=z[i].re-z[j].re, di=z[i].im-z[j].im; const tr=denom.re*dr - denom.im*di; const ti=denom.re*di + denom.im*dr; denom={re:tr,im:ti}; } const den2=denom.re*denom.re+denom.im*denom.im; const qr=(num.re*denom.re+num.im*denom.im)/den2; const qi=(num.im*denom.re-num.re*denom.im)/den2; z[i]={re:z[i].re-qr, im:z[i].im-qi}; }
+  return z.every(r => Math.hypot(r.re,r.im) > 1+1e-6);
 }
-function drawStableAR(p){ if(p===0) return []; let tries=0; while(tries++<500){
-  const phi=[]; for(let i=0;i<p;i++) phi.push(rnorm()*0.4);
-  // AR poly in backshift B: 1 - φ1 B - ... - φp B^p
-  const coeffs = new Array(p+1).fill(0); coeffs[0]=1; for(let i=1;i<=p;i++) coeffs[i] = -phi[i-1];
-  if(rootsOutsideUnitCircle(coeffs)) return phi; }
-  // fallback small coefficients
-  return Array.from({length:p}, ()=> (rng()<0.5?-1:1)*0.2*Math.random());
-}
-function drawInvertibleMA(q){ if(q===0) return []; let tries=0; while(tries++<500){
-  const th=[]; for(let i=0;i<q;i++) th.push(rnorm()*0.4);
-  // MA(B)=1 + θ1 B + ... + θq B^q invertible requires roots of MA poly outside unit circle
-  const coeffs = new Array(q+1).fill(0); for(let i=0;i<=q;i++) coeffs[i] = (i===0?1: (th[i-1]));
-  if(rootsOutsideUnitCircle(coeffs)) return th; }
-  return Array.from({length:q}, ()=> (rng()<0.5?-1:1)*0.2*Math.random());
-}
-function generateARIMA(T, p, d, q){
-  const phi = drawStableAR(p);
+function drawStableAR(p){ if(p===0) return []; let tries=0; while(tries++<500){ const phi=[]; for(let i=0;i<p;i++) phi.push(rnorm()*0.4); const coeffs=new Array(p+1).fill(0); coeffs[0]=1; for(let i=1;i<=p;i++) coeffs[i]=-phi[i-1]; if(rootsOutsideUnitCircle(coeffs)) return phi; } return Array.from({length:p}, ()=> (rng()<0.5?-1:1)*0.2*Math.random()); }
+function drawInvertibleMA(q){ if(q===0) return []; let tries=0; while(tries++<500){ const th=[]; for(let i=0;i<q;i++) th.push(rnorm()*0.4); const coeffs=new Array(q+1).fill(0); for(let i=0;i<=q;i++) coeffs[i]=(i===0?1:th[i-1]); if(rootsOutsideUnitCircle(coeffs)) return th; } return Array.from({length:q}, ()=> (rng()<0.5?-1:1)*0.2*Math.random()); }
+
+function generateARIMA_NB(T,p,d,q,allowDrift){
+  const phi = (d===0 ? drawNearBoundaryAR(p) : drawStableAR(p));
   const theta = drawInvertibleMA(q);
-  // innovations
-  const e = Array.from({length:T + 200}, ()=> rnorm());
-  let x = new Array(T + 200).fill(0);
-  // ARMA for differenced series if d=1; else levels
+  const alpha = allowDrift ? (rnorm()*0.2) : 0;
+  const e = Array.from({length:T+200}, ()=> rnorm());
+  let x = new Array(T+200).fill(0);
   for(let t=0;t<x.length; t++){
     let ar=0; for(let i=1;i<=phi.length;i++) if(t-i>=0) ar += phi[i-1]*x[t-i];
     let ma=0; for(let j=1;j<=theta.length;j++) if(t-j>=0) ma += theta[j-1]*e[t-j];
-    x[t] = ar + e[t] + ma;
+    x[t] = alpha + ar + e[t] + ma;
   }
-  if(d===1){ // integrate once
-    let y = new Array(T + 200).fill(0);
-    for(let t=1;t<y.length;t++) y[t] = y[t-1] + x[t];
-    return {y: y.slice(-T), phi, theta, d};
-  } else {
-    return {y: x.slice(-T), phi, theta, d};
-  }
-}
-function randomDGP(T, pmax, qmax, pNS){
-  const nonstat = rng() < pNS;
-  const p = Math.floor(rng()*(pmax+1));
-  const q = Math.floor(rng()*(qmax+1));
-  const d = nonstat ? 1 : 0;
-  return {T, p, d, q};
+  if(d===1){ let y=new Array(T+200).fill(0); for(let t=1;t<y.length;t++) y[t]=y[t-1]+x[t]; return {y:y.slice(-T), phi, theta, d, alpha}; }
+  return {y:x.slice(-T), phi, theta, d, alpha};
 }
 
 /******************** ADF test (intercept only) ********************/
-function adfTest(y){
-  // Δy_t = α + ρ y_{t-1} + Σ_{i=1..k} γ_i Δy_{t-i} + ε_t
-  const T=y.length;
-  // max lag by Schwert (1989): kmax = floor(12*(T/100)^{1/4})
-  const kmax = Math.max(0, Math.floor(12*Math.pow(T/100, 0.25)));
-  function fitWithLag(k){
-    const dy = diff(y);
-    const n = dy.length - k; if(n <= 5) return null;
-    const X=[], Y=[];
-    for(let t=k; t<dy.length; t++){
-      const row=[1, y[t]]; // intercept, y_{t}
-      for(let i=1;i<=k;i++) row.push(dy[t-i]);
-      X.push(row); Y.push(dy[t]);
-    }
-    const res = OLS(X, Y);
-    if (!res || !isFinite(res.s2)) return null;
-    // t-stat for rho (2nd coefficient)
-    const beta=res.beta, vcov=res.vcov; if(!vcov) return null;
-    const seRho = Math.sqrt(Math.abs(vcov[1][1]));
-    const tRho = (beta[1])/seRho;
-    // AIC = n*log(s2) + 2*kParams
-    const kParams = 2 + k; // α, ρ, and k lagged-diff params
-    const AIC = n*Math.log(res.s2) + 2*kParams;
-    return {k, tRho, AIC, alpha: beta[0], rho: beta[1], n};
-  }
-  let best=null; for(let k=0;k<=kmax;k++){ const m=fitWithLag(k); if(!m) continue; if(best===null || m.AIC<best.AIC) best=m; }
-  if(!best){ return {k:0, tRho: NaN, alpha: NaN, rho: NaN, n: 0, note:"fit failed"}; }
-  return best;
-}
+function adfTest(y){ const T=y.length; const kmax=Math.max(0,Math.floor(12*Math.pow(T/100,0.25))); function fitWithLag(k){ const dy=diff(y); const n=dy.length-k; if(n<=5) return null; const X=[],Y=[]; for(let t=k;t<dy.length;t++){ const row=[1,y[t]]; for(let i=1;i<=k;i++) row.push(dy[t-i]); X.push(row); Y.push(dy[t]); } const res=OLS(X,Y); if(!res||!isFinite(res.s2)) return null; const seRho=Math.sqrt(Math.abs(res.vcov[1][1])); const tRho=res.beta[1]/seRho; const AIC=n*Math.log(res.s2)+2*(2+k); return {k,tRho,AIC,alpha:res.beta[0],rho:res.beta[1],n}; } let best=null; for(let k=0;k<=kmax;k++){ const m=fitWithLag(k); if(!m) continue; if(best===null||m.AIC<best.AIC) best=m; } return best||{k:0,tRho:NaN,alpha:NaN,rho:NaN,n:0}; }
 
 /******************** Drawing ********************/
-function drawLine(canvas, series){ const ctx=canvas.getContext('2d'); const W=canvas.width, H=canvas.height; ctx.clearRect(0,0,W,H);
-  // padding
-  const px=30, py=14; const n=series.length; const min=Math.min(...series), max=Math.max(...series);
-  const pad=(max-min)||1; const ymin=min-0.1*pad, ymax=max+0.1*pad;
-  // grid
-  ctx.strokeStyle = '#e6e6e6'; ctx.lineWidth=1; for(let i=0;i<=5;i++){ const y=py + (H-2*py)*i/5; ctx.beginPath(); ctx.moveTo(px,y); ctx.lineTo(W-px,y); ctx.stroke(); }
-  // axes
-  ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(px, H-py); ctx.lineTo(W-px, H-py); ctx.moveTo(px, py); ctx.lineTo(px, H-py); ctx.stroke();
-  // line
-  ctx.strokeStyle= '#1f77b4'; ctx.lineWidth=1.5; ctx.beginPath(); for(let i=0;i<n;i++){
-    const x = px + (W-2*px)*i/(n-1); const y = py + (H-2*py)*(1 - (series[i]-ymin)/(ymax-ymin));
-    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-  } ctx.stroke();
-}
-function drawBars(canvas, values){ const ctx=canvas.getContext('2d'); const W=canvas.width, H=canvas.height; ctx.clearRect(0,0,W,H);
-  const px=30, py=14; const m=values.length-1; const vmax = Math.max(1, Math.max(...values.map(v=>Math.abs(v))));
-  // grid
-  ctx.strokeStyle='#e6e6e6'; for(let i=0;i<=4;i++){ const y=py + (H-2*py)*i/4; ctx.beginPath(); ctx.moveTo(px,y); ctx.lineTo(W-px,y); ctx.stroke(); }
-  // axes
-  ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(px, H/2); ctx.lineTo(W-px, H/2); ctx.moveTo(px, py); ctx.lineTo(px, H-py); ctx.stroke();
-  // CI
-  const nObs = 300; // placeholder for horizontal CI reference; visually constant
-  // better: user T; we will pass true T via values.meta if present
-  const z = (values.meta && values.meta.ci)? values.meta.ci : (1.96/Math.sqrt(values.meta?values.meta.T:values.length*2));
-  const y0 = py + (H-2*py)*(1 - (0.5 + z/2));
-  const y1 = py + (H-2*py)*(1 - (0.5 - z/2));
-  ctx.strokeStyle='#bbb'; ctx.setLineDash([4,3]); ctx.beginPath(); ctx.moveTo(px,y0); ctx.lineTo(W-px,y0); ctx.moveTo(px,y1); ctx.lineTo(W-px,y1); ctx.stroke(); ctx.setLineDash([]);
-  // bars
-  const bw = (W-2*px)/ (m+1);
-  for(let k=1;k<=m;k++){
-    const v = Math.max(-1, Math.min(1, values[k]));
-    const x = px + bw*(k-0.5);
-    const base = py + (H-2*py)*(1-0.5);
-    const y = py + (H-2*py)*(1 - (v*0.5 + 0.5));
-    ctx.fillStyle = '#1f77b4';
-    ctx.fillRect(x - bw*0.35, Math.min(base,y), bw*0.7, Math.abs(base-y));
-  }
-}
+function drawLine(canvas,series){ const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height; ctx.clearRect(0,0,W,H); const px=30,py=14,n=series.length; const min=Math.min(...series),max=Math.max(...series),pad=(max-min)||1,ymin=min-0.1*pad,ymax=max+0.1*pad; ctx.strokeStyle='#e6e6e6'; ctx.lineWidth=1; for(let i=0;i<=5;i++){ const y=py+(H-2*py)*i/5; ctx.beginPath(); ctx.moveTo(px,y); ctx.lineTo(W-px,y); ctx.stroke(); } ctx.strokeStyle='#000'; ctx.beginPath(); ctx.moveTo(px,H-py); ctx.lineTo(W-px,H-py); ctx.moveTo(px,py); ctx.lineTo(px,H-py); ctx.stroke(); ctx.strokeStyle='#1f77b4'; ctx.lineWidth=1.5; ctx.beginPath(); for(let i=0;i<n;i++){ const x=px+(W-2*px)*i/(n-1); const y=py+(H-2*py)*(1-(series[i]-ymin)/(ymax-ymin)); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);} ctx.stroke(); }
+function drawBars(canvas,values){ const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height; ctx.clearRect(0,0,W,H); const px=30,py=14,m=values.length-1; ctx.strokeStyle='#e6e6e6'; for(let i=0;i<=4;i++){ const y=py+(H-2*py)*i/4; ctx.beginPath(); ctx.moveTo(px,y); ctx.lineTo(W-px,y); ctx.stroke(); } ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(px,H/2); ctx.lineTo(W-px,H/2); ctx.moveTo(px,py); ctx.lineTo(px,H-py); ctx.stroke(); const ci=(values.meta&&values.meta.ci)? values.meta.ci : (1.96/Math.sqrt(values.meta?values.meta.T:values.length*2)); const y0=py+(H-2*py)*(1-(0.5+ci/2)); const y1=py+(H-2*py)*(1-(0.5-ci/2)); ctx.strokeStyle='#bbb'; ctx.setLineDash([4,3]); ctx.beginPath(); ctx.moveTo(px,y0); ctx.lineTo(W-px,y0); ctx.moveTo(px,y1); ctx.lineTo(W-px,y1); ctx.stroke(); ctx.setLineDash([]); const bw=(W-2*px)/(m+1); for(let k=1;k<=m;k++){ const v=Math.max(-1,Math.min(1,values[k])); const x=px+bw*(k-0.5); const base=py+(H-2*py)*(1-0.5); const y=py+(H-2*py)*(1-(v*0.5+0.5)); ctx.fillStyle='#1f77b4'; ctx.fillRect(x-bw*0.35, Math.min(base,y), bw*0.7, Math.abs(base-y)); } }
 
-/******************** Session + UI wiring ********************/
-const els = {
-  btnGenerate: document.getElementById('btn-generate'),
-  btnSame: document.getElementById('btn-same'),
-  btnStat: document.getElementById('btn-stationary'),
-  btnNon: document.getElementById('btn-nonstationary'),
-  score: document.getElementById('score'),
-  truth: document.getElementById('truth'),
-  adfEq: document.getElementById('adf-eq'),
-  adfOut: document.getElementById('adf-out'),
-  vrOut: document.getElementById('vr-out'),
-  T: document.getElementById('inp-T'),
-  pns: document.getElementById('inp-pns'),
-  seed: document.getElementById('inp-seed'),
-  pmax: document.getElementById('inp-pmax'),
-  qmax: document.getElementById('inp-qmax'),
-  reset: document.getElementById('btn-reset'),
-  download: document.getElementById('btn-download'),
-  canv: {
-    levels: document.getElementById('plot-levels'),
-    diff: document.getElementById('plot-diff'),
-    acfL: document.getElementById('acf-levels'),
-    acfD: document.getElementById('acf-diff'),
-    pacfL: document.getElementById('pacf-levels'),
-    pacfD: document.getElementById('pacf-diff'),
-  }
-};
-// ensure canvas backing size
+/******************** UI wiring ********************/
+const els={ btnGenerate:document.getElementById('btn-generate'), btnSame:document.getElementById('btn-same'), btnStat:document.getElementById('btn-stationary'), btnNon:document.getElementById('btn-nonstationary'), score:document.getElementById('score'), truth:document.getElementById('truth'), adfEq:document.getElementById('adf-eq'), adfOut:document.getElementById('adf-out'), vrOut:document.getElementById('vr-out'), T:document.getElementById('inp-T'), pns:document.getElementById('inp-pns'), seed:document.getElementById('inp-seed'), drift:document.getElementById('inp-drift'), pmax:document.getElementById('inp-pmax'), qmax:document.getElementById('inp-qmax'), reset:document.getElementById('btn-reset'), download:document.getElementById('btn-download'), canv:{ levels:document.getElementById('plot-levels'), diff:document.getElementById('plot-diff'), acfL:document.getElementById('acf-levels'), acfD:document.getElementById('acf-diff'), pacfL:document.getElementById('pacf-levels'), pacfD:document.getElementById('pacf-diff') } };
 for(const c of Object.values(els.canv)){ c.width=600; c.height=220; }
-
 const storeKey='stationarity-trainer-v1';
-function loadSession(){ try{ const s=JSON.parse(localStorage.getItem(storeKey)||'{}'); return {correct:s.correct||0, total:s.total||0, history:s.history||[]}; }catch(e){ return {correct:0,total:0,history:[]}; } }
+function loadSession(){ try{ const s=JSON.parse(localStorage.getItem(storeKey)||'{}'); return {correct:s.correct||0,total:s.total||0,history:s.history||[]}; }catch(e){ return {correct:0,total:0,history:[]}; } }
 function saveSession(s){ localStorage.setItem(storeKey, JSON.stringify(s)); }
-function updateScore(){ const s=loadSession(); const pct = s.total? ((100*s.correct/s.total).toFixed(1)+'%') : '—'; els.score.textContent = `${s.correct} / ${s.total} (${pct})`; }
-
-let current = null; // {series, info}
+function updateScore(){ const s=loadSession(); const pct=s.total? ((100*s.correct/s.total).toFixed(1)+'%') : '—'; els.score.textContent=`${s.correct} / ${s.total} (${pct})`; }
+let current=null;
 function generate(useSame){
-  const T = parseInt(els.T.value);
-  const pns = parseFloat(els.pns.value);
-  const pmax = Math.min(3, Math.max(0, parseInt(els.pmax.value)));
-  const qmax = Math.min(2, Math.max(0, parseInt(els.qmax.value)));
-  const sdSeed = els.seed.value.trim(); if(!useSame){ setSeed(sdSeed||null); }
-  const meta = useSame && current? current.meta : randomDGP(T, pmax, qmax, pns);
-  const {p, d, q} = meta;
-  const gen = generateARIMA(T, p, d, q);
-  const y = gen.y;
-  // plots
-  const dy = diff(y);
-  drawLine(els.canv.levels, y);
-  drawLine(els.canv.diff, dy);
-  const L = Math.min(40, Math.floor(10*Math.log10(T)));
-  const acL = acf(y, L); acL.meta={T, ci: 1.96/Math.sqrt(T)};
-  const acD = acf(dy, Math.max(1,L)); acD.meta={T:dy.length, ci: 1.96/Math.sqrt(dy.length)};
-  const pcL = pacf(y, L); pcL.meta={T, ci: 1.96/Math.sqrt(T)};
-  const pcD = pacf(dy, Math.max(1,L)); pcD.meta={T:dy.length, ci: 1.96/Math.sqrt(dy.length)};
-  drawBars(els.canv.acfL, acL);
-  drawBars(els.canv.acfD, acD);
-  drawBars(els.canv.pacfL, pcL);
-  drawBars(els.canv.pacfD, pcD);
-  // ADF
-  const adf = adfTest(y);
-  // outputs
-  els.adfEq.textContent = `Δy_t = α + ρ y_{t-1} + ${adf.k>0?`Σ_{i=1}^{${adf.k}} γ_i Δy_{t-i}`:'(no lags)'} + ε_t`;
-  els.adfOut.innerHTML = '';
+  const T=parseInt(els.T.value), pns=parseFloat(els.pns.value), pmax=Math.min(3,Math.max(0,parseInt(els.pmax.value))), qmax=Math.min(2,Math.max(0,parseInt(els.qmax.value)));
+  const sdSeed=els.seed.value.trim(); if(!useSame){ setSeed(sdSeed||null); }
+  const meta = useSame && current? current.meta : (function(){ const nonstat=rng()<pns; const p=Math.floor(rng()*(pmax+1)); const q=Math.floor(rng()*(qmax+1)); const d=nonstat?1:0; return {T,p,d,q}; })();
+  const {p,d,q}=meta;
+  const gen=generateARIMA_NB(T,p,d,q,els.drift.checked);
+  const y=gen.y; const dy=diff(y);
+  drawLine(els.canv.levels,y); drawLine(els.canv.diff,dy);
+  const L=Math.min(40,Math.floor(10*Math.log10(T)));
+  const acL=acf(y,L); acL.meta={T,ci:1.96/Math.sqrt(T)};
+  const acD=acf(dy,Math.max(1,L)); acD.meta={T:dy.length,ci:1.96/Math.sqrt(dy.length)};
+  const pcL=pacf(y,L); pcL.meta={T,ci:1.96/Math.sqrt(T)};
+  const pcD=pacf(dy,Math.max(1,L)); pcD.meta={T:dy.length,ci:1.96/Math.sqrt(dy.length)};
+  drawBars(els.canv.acfL,acL); drawBars(els.canv.acfD,acD); drawBars(els.canv.pacfL,pcL); drawBars(els.canv.pacfD,pcD);
+  const adf=adfTest(y);
+  els.adfEq.textContent=`Δy_t = α + ρ y_{t-1} + ${adf.k>0?`Σ_{i=1}^{${adf.k}} γ_i Δy_{t-i}`:'(no lags)'} + ε_t`;
+  els.adfOut.innerHTML='';
   function addKV(k,v){ const d1=document.createElement('div'); d1.textContent=k; const d2=document.createElement('div'); d2.textContent=v; els.adfOut.appendChild(d1); els.adfOut.appendChild(d2); }
-  addKV('t-stat ρ', adf.tRho.toFixed(3));
-  addKV('lag k', adf.k);
-  addKV('AIC (fit)', adf.AIC.toFixed(2));
-  addKV('n used', adf.n);
-  // variance ratio
-  const sdy = sd(y); const sdd = sd(dy);
-  els.vrOut.innerHTML='';
+  addKV('t-stat ρ', adf.tRho.toFixed(3)); addKV('lag k', adf.k); addKV('AIC (fit)', adf.AIC.toFixed(2)); addKV('n used', adf.n);
+  const sdy=sd(y), sdd=sd(dy); els.vrOut.innerHTML='';
   function addKVR(k,v){ const d1=document.createElement('div'); d1.textContent=k; const d2=document.createElement('div'); d2.textContent=v; els.vrOut.appendChild(d1); els.vrOut.appendChild(d2); }
-  addKVR('sd(Δy)/sd(y)', (sdd/sdy).toFixed(3));
-  addKVR('sd(Δy)', sdd.toFixed(3));
-  addKVR('sd(y)', sdy.toFixed(3));
-
-  current = {y, dy, acL, acD, pcL, pcD, adf, meta: {p, d, q, T}, params:{phi: gen.phi, theta: gen.theta}};
+  addKVR('sd(Δy)/sd(y)', (sdd/sdy).toFixed(3)); addKVR('sd(Δy)', sdd.toFixed(3)); addKVR('sd(y)', sdy.toFixed(3));
+  current={y,dy,acL,acD,pcL,pcD,adf,meta:{p,d,q,T},params:{phi:gen.phi,theta:gen.theta,alpha:gen.alpha}};
   els.truth.textContent='(hidden)';
 }
-
 function reveal(correct){
-  const {meta, params} = current;
-  const label = meta.d===0? `ARMA(${meta.p},${meta.q})` : `ARIMA(${meta.p},1,${meta.q})`;
-  const phiStr = params.phi.length? params.phi.map(v=>v.toFixed(3)).join(', ') : '—';
-  const thStr = params.theta.length? params.theta.map(v=>v.toFixed(3)).join(', ') : '—';
-  const mark = correct? '✔' : '✖';
-  els.truth.innerHTML = `<div class="pill">${mark} ${label}</div>
-  <div>φ: [${phiStr}]</div>
-  <div>θ: [${thStr}]</div>`;
+  const {meta,params}=current; const label=meta.d===0?`ARMA(${meta.p},${meta.q})`:`ARIMA(${meta.p},1,${meta.q})`;
+  const phiStr=params.phi.length? params.phi.map(v=>v.toFixed(3)).join(', '):'—'; const thStr=params.theta.length? params.theta.map(v=>v.toFixed(3)).join(', '):'—'; const aStr=(params.alpha!==undefined)? params.alpha.toFixed(3):'0.000';
+  const mark=correct?'✔':'✖';
+  els.truth.innerHTML = `<div class="pill">${mark} ${label}</div>\n  <div>α (drift): ${aStr}</div>\n  <div>φ: [${phiStr}]</div>\n  <div>θ: [${thStr}]</div>`;
 }
-
-function recordAnswer(ansNonStationary){
-  if(!current){ return; }
-  const truthNS = current.meta.d===1;
-  const correct = (ansNonStationary===truthNS);
-  reveal(correct);
-  const sess = loadSession();
-  sess.total += 1; if(correct) sess.correct += 1;
-  // log history row
-  sess.history.push({ts: Date.now(), T: current.meta.T, p: current.meta.p, q: current.meta.q, d: current.meta.d,
-    tRho: current.adf.tRho, k: current.adf.k});
-  saveSession(sess); updateScore();
-}
-
+function recordAnswer(ansNS){ if(!current) return; const truthNS=current.meta.d===1; const correct=(ansNS===truthNS); reveal(correct); const sess=loadSession(); sess.total+=1; if(correct) sess.correct+=1; sess.history.push({ts:Date.now(),T:current.meta.T,p:current.meta.p,q:current.meta.q,d:current.meta.d,tRho:current.adf.tRho,k:current.adf.k}); saveSession(sess); updateScore(); }
 function resetSession(){ saveSession({correct:0,total:0,history:[]}); updateScore(); }
-function downloadCSV(){ const s=loadSession(); const rows=[['timestamp','T','p','d','q','tRho','k']];
-  for(const h of s.history){ rows.push([new Date(h.ts).toISOString(), h.T, h.p, h.d, h.q, h.tRho, h.k]); }
-  const csv = rows.map(r=>r.join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='stationarity_session.csv'; a.click(); URL.revokeObjectURL(url);
-}
-
-els.btnGenerate.addEventListener('click', ()=>generate(false));
-els.btnSame.addEventListener('click', ()=>generate(true));
-els.btnStat.addEventListener('click', ()=>recordAnswer(false));
-els.btnNon.addEventListener('click', ()=>recordAnswer(true));
-els.reset.addEventListener('click', resetSession);
-els.download.addEventListener('click', downloadCSV);
-
-// boot
-updateScore();
-setSeed(null); // random
-// initial series
-generate(false);
+function downloadCSV(){ const s=loadSession(); const rows=[["timestamp","T","p","d","q","tRho","k"]]; for(const h of s.history){ rows.push([new Date(h.ts).toISOString(),h.T,h.p,h.d,h.q,h.tRho,h.k]); } const csv=rows.map(r=>r.join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='stationarity_session.csv'; a.click(); URL.revokeObjectURL(url); }
+els.btnGenerate.addEventListener('click',()=>generate(false)); els.btnSame.addEventListener('click',()=>generate(true)); els.btnStat.addEventListener('click',()=>recordAnswer(false)); els.btnNon.addEventListener('click',()=>recordAnswer(true)); els.reset.addEventListener('click',resetSession); els.download.addEventListener('click',downloadCSV);
+updateScore(); setSeed(null); generate(false);
 </script>
 </body>
 </html>
