@@ -1,7 +1,7 @@
 ---
 layout: archive
 title: "Time Series Tools"
-permalink: /tools
+permalink: /time-series-tools/
 author_profile: true
 ---
 
@@ -24,7 +24,7 @@ The Stationarity Trainer is an interactive educational tool designed to help stu
 - Interactive plots showing original series, differenced series, and test statistics
 
 
-[**Launch Stationarity Trainer →**](/stationarity-trainer.html)
+[**Launch Stationarity Trainer →**](/tools/stationarity-trainer.html)
 
 ---
 
