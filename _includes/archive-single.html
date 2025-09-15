@@ -60,6 +60,13 @@
     {% include abstract-toggle.html text=abs_text %}
   {% endif %}
 {% endif %}
+
+{% if post.collection == "working" %}
+  {% assign abs_text = post.abstract | default: post.excerpt %}
+  {% if abs_text %}
+    {% include abstract-toggle.html text=abs_text %}
+  {% endif %}
+{% endif %}
     
     {% if post.citation and post.paperurl and post.slidesurl and post.bibtexurl %}
       <p>Recommended citation: {{ post.citation }}<br /><a href="{{ post.paperurl }}">Download Paper</a> | <a href="{{ post.slidesurl }}">Download Slides</a> | <a href="{{ post.bibtexurl }}">Download Bibtex</a></p>
