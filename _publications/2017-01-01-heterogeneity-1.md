@@ -7,7 +7,7 @@ date: 2017-01-01
 venue: 'Regional Science and Urban Economics'
 paperurl: 'http://grycrnwll.github.io/files/heterogeneity.pdf'
 bibtexurl: 'http://grycrnwll.github.io/files/heterogeneitybib.bib'
-citation: 'Cornwall, Gary J., and Olivier Parent. &quot;Embracing heterogeneity: the spatial autoregressive mixture model.&quot; <i>Regional Science and Urban Economics </i>. (2017) 64, 148-161.'
+#citation: 'Cornwall, Gary J., and Olivier Parent. &quot;Embracing heterogeneity: the spatial autoregressive mixture model.&quot; <i>Regional Science and Urban Economics </i>. (2017) 64, 148-161.'
 abstract: In this paper a mixture distribution model is extended to include spatial dependence of the autoregressive type.
 The resulting model nests both spatial heterogeneity and spatial dependence as special cases. A data generation
 process is outlined that incorporates both a finite mixture of normal distributions and spatial dependence.
