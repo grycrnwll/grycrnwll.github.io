@@ -315,6 +315,9 @@ whitelist:
   - jekyll-redirect-from
   - jemoji
 
+redirect_from:
+  - https://garycornwall.weebly.com/
+
 
 # Archives
 #  Type
