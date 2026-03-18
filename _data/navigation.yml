@@ -26,10 +26,6 @@ main:
   - title: "CV"
     url: /files/cornwall_cv.pdf
 
-  - title: "Time Series Tools"
-    url: /time-series-tools/
-    
-
         
   #- title: "Blog Posts"
   #  url: /year-archive/
