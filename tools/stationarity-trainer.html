@@ -1,0 +1,1186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stationarity Trainer</title>
+  <style>
+    :root {
+      --bg: #ffffff; --fg: #111111; --muted: #666666; --accent: #1f77b4;
+      --ok: #2ca02c; --bad: #d62728; --panel: #f7f7f7; --grid: #e6e6e6;
+      --warn: #ff7f0e; --ambig: #f59e0b;
+    }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg); color: var(--fg); font-size: 14px;
+    }
+    header { border-bottom: 1px solid #ccc; padding: 12px 16px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+    h1 { font-size: 20px; margin: 0; font-weight: 600; }
+    .sub { color: var(--muted); font-size: 13px; }
+    main { display: grid; grid-template-columns: 320px 1fr 360px; gap: 12px; padding: 12px; min-height: 0; }
+    @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+    .card { background: var(--panel); border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
+    .controls label { display: block; font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .controls input[type="number"], .controls input[type="text"], .controls select {
+      width: 100%; padding: 5px 6px; border: 1px solid #bbb; border-radius: 6px; font-size: 13px;
+      background: #fff; color: var(--fg); box-sizing: border-box;
+    }
+    .controls .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    button { padding: 7px 10px; border: 1px solid #333; background: #fff; color: #111; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; }
+    button:hover { background: #f0f0f0; }
+    button:active { transform: scale(0.98); }
+    button.primary { background: var(--fg); color: #fff; }
+    button.primary:hover { background: #333; }
+    button.good { border-color: var(--ok); color: var(--ok); }
+    button.good:hover { background: #f0fff0; }
+    button.bad { border-color: var(--bad); color: var(--bad); }
+    button.bad:hover { background: #fff5f5; }
+    button.trend-btn { border-color: var(--warn); color: var(--warn); }
+    button.trend-btn:hover { background: #fff8f0; }
+    button:disabled { opacity: 0.4; cursor: default; }
+    .stack { display: flex; flex-direction: column; gap: 8px; }
+    .plots { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .plot { background: #fff; border: 1px solid #bbb; border-radius: 6px; padding: 8px; }
+    .plot canvas { width: 100%; height: 200px; display: block; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .muted { color: var(--muted); }
+    .rowline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .score { font-weight: 700; }
+    details { background: #fff; border: 1px solid #bbb; border-radius: 6px; padding: 6px 8px; }
+    details summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+    .label { font-size: 12px; color: var(--muted); }
+    .kv { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 13px; }
+    .kv div { padding: 2px 0; border-bottom: 1px dotted #eee; }
+    .pill { display: inline-block; padding: 3px 8px; border: 1px solid #bbb; border-radius: 999px; font-size: 12px; background: #fff; }
+    .pill.correct { border-color: var(--ok); color: var(--ok); background: #f0fff0; }
+    .pill.incorrect { border-color: var(--bad); color: var(--bad); background: #fff5f5; }
+    .footer { font-size: 11px; color: var(--muted); padding: 8px 16px 16px; }
+    .streak-badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; font-weight: 700; }
+    .streak-badge.hot { background: #fff3e0; color: #e65100; border: 1px solid #ffb74d; }
+    .streak-badge.cold { background: #e8eaf6; color: #283593; border: 1px solid #9fa8da; }
+    .difficulty-bar { display: flex; gap: 4px; }
+    .difficulty-bar button { flex: 1; font-size: 12px; padding: 5px 4px; }
+    .difficulty-bar button.active { background: var(--fg); color: #fff; border-color: var(--fg); }
+    .cv-row { display: flex; gap: 12px; font-size: 12px; }
+    .cv-item { text-align: center; }
+    .cv-item .cv-label { color: var(--muted); }
+    .cv-item .cv-val { font-weight: 700; }
+    .reject { color: var(--ok); font-weight: 700; }
+    .fail-reject { color: var(--bad); font-weight: 700; }
+    .vr-guide { font-size: 11px; padding: 3px 6px; border-radius: 4px; margin-top: 4px; }
+    .vr-diff { background: #e8f5e9; color: #2e7d32; }
+    .vr-level { background: #fff3e0; color: #e65100; }
+    kbd { background: #eee; border: 1px solid #ccc; border-radius: 3px; padding: 1px 5px; font-size: 11px; font-family: inherit; }
+
+    /* Evidence checklist */
+    .evidence-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .evidence-table th { font-size: 10px; color: var(--muted); font-weight: 600; text-align: center; padding: 2px 4px; }
+    .evidence-table td { padding: 3px 4px; border-bottom: 1px solid #eee; }
+    .evidence-table td:first-child { font-size: 12px; }
+    .evidence-table td:nth-child(2), .evidence-table td:nth-child(3) { text-align: center; width: 32px; }
+    .evidence-radio { appearance: none; -webkit-appearance: none; width: 16px; height: 16px; border: 2px solid #bbb; border-radius: 50%; cursor: pointer; margin: 0; vertical-align: middle; position: relative; }
+    .evidence-radio:checked { border-color: var(--accent); }
+    .evidence-radio:checked::after { content: ""; position: absolute; top: 3px; left: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+    .evidence-radio:disabled { cursor: default; opacity: 0.6; }
+    .evidence-result { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 4px; vertical-align: middle; }
+    .evidence-result.ev-correct { background: var(--ok); }
+    .evidence-result.ev-incorrect { background: var(--bad); }
+    .evidence-result.ev-ambiguous { background: var(--ambig); }
+
+    /* Scorecard */
+    .scorecard { font-size: 12px; padding: 8px; background: #fff; border: 1px solid #ddd; border-radius: 6px; line-height: 1.5; }
+    .scorecard .sc-title { font-weight: 700; margin-bottom: 4px; }
+    .conflict-flag { font-size: 11px; padding: 6px 8px; background: #fffbeb; border: 1px solid #fbbf24; border-radius: 6px; margin-top: 4px; line-height: 1.4; }
+
+    /* Trend toggle */
+    .view-toggle { display: flex; gap: 0; border: 1px solid #bbb; border-radius: 6px; overflow: hidden; }
+    .view-toggle button { border: none; border-radius: 0; border-right: 1px solid #bbb; padding: 5px 12px; font-size: 12px; font-weight: 600; background: #fff; color: var(--fg); }
+    .view-toggle button:last-child { border-right: none; }
+    .view-toggle button:hover { background: #f5f5f5; }
+    .view-toggle button.active { background: var(--fg); color: #fff; }
+    .trend-line-info { font-size: 11px; color: var(--muted); padding: 4px 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Stationarity Trainer</h1>
+    <div class="sub">Practice identifying stationary, non-stationary, and trend-stationary time series</div>
+    <div class="sub" style="margin-left:auto;">Keyboard: <kbd>G</kbd> generate <kbd>S</kbd> stationary <kbd>N</kbd> non-stationary <kbd>T</kbd> trend-stationary</div>
+  </header>
+  <main>
+    <!-- Left: Controls -->
+    <section class="card controls">
+      <div class="stack">
+        <div>
+          <div class="label" style="margin-bottom:4px;">Difficulty</div>
+          <div class="difficulty-bar">
+            <button id="diff-beginner">Beginner</button>
+            <button id="diff-intermediate" class="active">Intermediate</button>
+            <button id="diff-advanced">Advanced</button>
+          </div>
+        </div>
+        <div class="rowline">
+          <button id="btn-generate" class="primary">Generate series</button>
+          <button id="btn-same" title="Regenerate with same DGP">Re-run same</button>
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:4px;">Evidence checklist (Lecture 2)</div>
+          <table class="evidence-table">
+            <thead><tr><th style="text-align:left;">Evidence</th><th>S</th><th>NS</th></tr></thead>
+            <tbody>
+              <tr data-ev="visual"><td>Visual inspection</td><td><input type="radio" name="ev-visual" value="S" class="evidence-radio"></td><td><input type="radio" name="ev-visual" value="NS" class="evidence-radio"></td></tr>
+              <tr data-ev="acf"><td>ACF decay pattern</td><td><input type="radio" name="ev-acf" value="S" class="evidence-radio"></td><td><input type="radio" name="ev-acf" value="NS" class="evidence-radio"></td></tr>
+              <tr data-ev="adf"><td>ADF test vs. critical values</td><td><input type="radio" name="ev-adf" value="S" class="evidence-radio"></td><td><input type="radio" name="ev-adf" value="NS" class="evidence-radio"></td></tr>
+              <tr data-ev="vr"><td>Variance ratio</td><td><input type="radio" name="ev-vr" value="S" class="evidence-radio"></td><td><input type="radio" name="ev-vr" value="NS" class="evidence-radio"></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:4px;">Suspect a trend?</div>
+          <button id="btn-detrend" style="font-size:12px;">I think there is a trend in this series</button>
+          <div id="trend-info" class="trend-line-info" style="display:none;"></div>
+        </div>
+        <div>
+          <span class="label">Your answer:</span>
+          <div class="rowline">
+            <button id="btn-stationary" class="good">Stationary <kbd>S</kbd></button>
+            <button id="btn-nonstationary" class="bad">Non-stationary <kbd>N</kbd></button>
+            <button id="btn-trendstat" class="trend-btn">Trend Stationary <kbd>T</kbd></button>
+          </div>
+        </div>
+        <div>
+          <span class="label">Session:</span>
+          <div class="rowline">
+            <span class="score" id="score">0 / 0 (--)</span>
+            <span id="streak-display"></span>
+          </div>
+        </div>
+        <details>
+          <summary>Advanced options</summary>
+          <div class="row">
+            <label>p(NS) probability
+              <input type="number" id="inp-pns" min="0" max="1" step="0.05" value="0.35" />
+            </label>
+            <label>p(Trend) probability
+              <input type="number" id="inp-pts" min="0" max="1" step="0.05" value="0.20" />
+            </label>
+          </div>
+          <div class="row">
+            <label>Seed (optional)
+              <input type="text" id="inp-seed" placeholder="auto" />
+            </label>
+          </div>
+          <label style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+            <input type="checkbox" id="inp-drift" checked /> Allow drift term
+          </label>
+          <div class="row">
+            <label>Max AR p
+              <input type="number" id="inp-pmax" min="0" max="3" step="1" value="1" />
+            </label>
+            <label>Max MA q
+              <input type="number" id="inp-qmax" min="0" max="2" step="1" value="0" />
+            </label>
+          </div>
+          <div class="row" style="margin-top:6px;">
+            <label>Min T
+              <input type="number" id="inp-tmin" min="20" max="300" step="10" value="40" />
+            </label>
+            <label>Max T
+              <input type="number" id="inp-tmax" min="40" max="500" step="10" value="120" />
+            </label>
+          </div>
+        </details>
+        <div class="rowline" style="margin-top:4px;">
+          <button id="btn-reset" style="font-size:12px;">Reset session</button>
+          <button id="btn-download" style="font-size:12px;">Download CSV</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Middle: Plots -->
+    <section class="card">
+      <div id="view-toggle-container" style="margin-bottom:8px; display:none;">
+        <div class="view-toggle">
+          <button id="view-original" class="active">Original series</button>
+          <button id="view-detrended">Detrended residuals</button>
+        </div>
+      </div>
+      <div class="plots">
+        <div class="plot"><div class="label" id="lbl-levels">Levels y<sub>t</sub></div><canvas id="plot-levels"></canvas></div>
+        <div class="plot"><div class="label" id="lbl-diff">First differences &Delta;y<sub>t</sub></div><canvas id="plot-diff"></canvas></div>
+        <div class="plot"><div class="label" id="lbl-acf">ACF (levels)</div><canvas id="acf-levels"></canvas></div>
+        <div class="plot"><div class="label" id="lbl-acfd">ACF (first differences)</div><canvas id="acf-diff"></canvas></div>
+        <div class="plot"><div class="label" id="lbl-pacf">PACF (levels)</div><canvas id="pacf-levels"></canvas></div>
+        <div class="plot"><div class="label" id="lbl-pacfd">PACF (first differences)</div><canvas id="pacf-diff"></canvas></div>
+      </div>
+    </section>
+
+    <!-- Right: Diagnostics / Reveal -->
+    <section class="card">
+      <div class="stack">
+        <div>
+          <div class="label">ADF test (intercept only)</div>
+          <div class="mono" id="adf-eq" style="font-size:12px; white-space: pre-wrap;"></div>
+          <div class="kv mono" id="adf-out"></div>
+          <div id="adf-cv" style="margin-top:6px;"></div>
+          <div id="adf-verdict" style="margin-top:4px; font-size:13px;"></div>
+          <div id="adf-ref" style="margin-top:4px; font-size:10px; color:var(--muted);"></div>
+        </div>
+        <div>
+          <div class="label">Variance ratio (Mills rule of thumb)</div>
+          <div class="kv mono" id="vr-out"></div>
+          <div id="vr-verdict"></div>
+        </div>
+        <div>
+          <div class="label">Truth (revealed after answer)</div>
+          <div id="truth" class="mono">(answer to reveal)</div>
+        </div>
+        <div id="scorecard-box" style="display:none;"></div>
+        <div id="explanation-box" style="display:none;">
+          <div class="label">What to look for</div>
+          <div id="explanation" style="font-size:12px; line-height:1.5;"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div class="footer">
+    All computation runs client-side. ADF critical values from MacKinnon (2010). Variance ratio threshold from Dr. Jeff Mills.
+    Results may differ slightly from R due to finite precision.
+  </div>
+
+<script>
+"use strict";
+
+/* ===== PRNG ===== */
+function mulberry32(a){return function(){var t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
+function hashString(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=(h<<13)|(h>>>19);}return(h>>>0);}
+let rng=mulberry32(123456789);
+function setSeed(seedStr){rng=seedStr?mulberry32(hashString(seedStr)):mulberry32((Math.random()*1e9)|0);}
+function rnorm(){let u=0,v=0;while(u===0)u=rng();while(v===0)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+/* ===== Basic stats ===== */
+function mean(a){let s=0;for(const x of a)s+=x;return s/a.length;}
+function variance(a){const m=mean(a);let s=0;for(const x of a){const d=x-m;s+=d*d;}return s/(a.length-1);}
+function sd(a){return Math.sqrt(variance(a));}
+function diff(a){const d=[];for(let i=1;i<a.length;i++)d.push(a[i]-a[i-1]);return d;}
+function acf(x,maxLag){const n=x.length,mx=mean(x);let ac=new Array(maxLag+1).fill(0),den=0;for(let t=0;t<n;t++){const d=x[t]-mx;den+=d*d;}for(let k=0;k<=maxLag;k++){let num=0;for(let t=k;t<n;t++){num+=(x[t]-mx)*(x[t-k]-mx);}ac[k]=num/den;}return ac;}
+function pacf(x,maxLag){const r=acf(x,maxLag);const phi=Array.from({length:maxLag+1},()=>Array(maxLag+1).fill(0));const sigma=Array(maxLag+1).fill(0);sigma[0]=r[0];if(sigma[0]===0)return Array(maxLag+1).fill(0);for(let k=1;k<=maxLag;k++){let sum=0;for(let j=1;j<k;j++)sum+=phi[k-1][j]*r[k-j];const phikk=(r[k]-sum)/sigma[k-1];phi[k][k]=phikk;for(let j=1;j<k;j++)phi[k][j]=phi[k-1][j]-phikk*phi[k-1][k-j];sigma[k]=sigma[k-1]*(1-phikk*phikk);}const out=new Array(maxLag+1).fill(0);out[0]=1;for(let k=1;k<=maxLag;k++)out[k]=phi[k][k];return out;}
+
+/* ===== OLS ===== */
+function OLS(X,y){
+  const n=y.length,k=X[0].length;
+  const XtX=Array.from({length:k},()=>Array(k).fill(0));
+  const Xty=Array(k).fill(0);
+  for(let i=0;i<n;i++){const xi=X[i],yi=y[i];for(let a=0;a<k;a++){Xty[a]+=xi[a]*yi;for(let b=0;b<k;b++)XtX[a][b]+=xi[a]*xi[b];}}
+  // Augment [XtX | I] to get (XtX)^{-1} via Gauss-Jordan
+  const A=XtX.map((r,i)=>{const row=r.slice();for(let j=0;j<k;j++)row.push(i===j?1:0);return row;});
+  const width=2*k;
+  for(let i=0;i<k;i++){
+    let m=i;for(let r=i+1;r<k;r++){if(Math.abs(A[r][i])>Math.abs(A[m][i]))m=r;}
+    if(Math.abs(A[m][i])<1e-12)return{beta:Array(k).fill(NaN),resid:Array(n).fill(NaN),s2:NaN,vcov:null};
+    if(m!==i){const tmp=A[i];A[i]=A[m];A[m]=tmp;}
+    const piv=A[i][i];for(let c=0;c<width;c++)A[i][c]/=piv;
+    for(let r=0;r<k;r++)if(r!==i){const f=A[r][i];for(let c=0;c<width;c++)A[r][c]-=f*A[i][c];}
+  }
+  // Extract (XtX)^{-1} from right half of augmented matrix
+  const XtXinv=A.map(row=>row.slice(k,width));
+  // beta = (XtX)^{-1} * Xty
+  const beta=new Array(k).fill(0);
+  for(let i=0;i<k;i++)for(let j=0;j<k;j++)beta[i]+=XtXinv[i][j]*Xty[j];
+  const resid=new Array(n).fill(0);for(let i=0;i<n;i++){let fit=0;for(let j=0;j<k;j++)fit+=X[i][j]*beta[j];resid[i]=y[i]-fit;}
+  const s2=resid.reduce((a,c)=>a+c*c,0)/(n-k);
+  const vcov=XtXinv.map(row=>row.map(v=>v*s2));
+  return{beta,resid,s2,vcov};
+}
+
+/* ===== Root helpers ===== */
+function rootsOutsideUnitCircle(coeffs){
+  const p=coeffs.length-1;if(p===0)return true;
+  const a=coeffs.slice();let z=[];
+  for(let k=0;k<p;k++){const ang=2*Math.PI*(k+1)/p;z.push({re:Math.cos(ang),im:Math.sin(ang)});}
+  function evalPoly(zc){let re=0,im=0,zr=1,zi=0;for(let i=0;i<=p;i++){re+=a[i]*zr;im+=a[i]*zi;const nzr=zr*zc.re-zi*zc.im;const nzi=zr*zc.im+zi*zc.re;zr=nzr;zi=nzi;}return{re,im};}
+  for(let it=0;it<40;it++)for(let i=0;i<p;i++){
+    let num=evalPoly(z[i]);let denom={re:1,im:0};
+    for(let j=0;j<p;j++)if(j!==i){const dr=z[i].re-z[j].re,di=z[i].im-z[j].im;const tr=denom.re*dr-denom.im*di;const ti=denom.re*di+denom.im*dr;denom={re:tr,im:ti};}
+    const den2=denom.re*denom.re+denom.im*denom.im;const qr=(num.re*denom.re+num.im*denom.im)/den2;const qi=(num.im*denom.re-num.re*denom.im)/den2;
+    z[i]={re:z[i].re-qr,im:z[i].im-qi};
+  }
+  return z.every(r=>Math.hypot(r.re,r.im)>1+1e-6);
+}
+function makePolyFromRoots(roots){
+  let coeffs=[1];
+  for(const r of roots){
+    const denom=r.re*r.re+r.im*r.im;const c_re=r.re/denom;const c_im=-r.im/denom;
+    const next=new Array(coeffs.length+1).fill(0).map(()=>({re:0,im:0}));
+    for(let k=0;k<coeffs.length;k++){
+      const a_re=(typeof coeffs[k]==='number')?coeffs[k]:coeffs[k].re;
+      const a_im=(typeof coeffs[k]==='number')?0:coeffs[k].im;
+      next[k].re+=a_re;next[k].im+=a_im;
+      next[k+1].re+=-(a_re*c_re-a_im*c_im);
+      next[k+1].im+=-(a_re*c_im+a_im*c_re);
+    }
+    coeffs=next.map(z=>(Math.abs(z.im)<1e-10?z.re:z));
+  }
+  return coeffs.map(v=>(typeof v==='number'?v:v.re));
+}
+
+/* ===== DGP generation ===== */
+function drawNearBoundaryAR(p,difficulty){
+  if(p===0)return[];
+  const roots=[];
+  const phiRange=difficulty==='beginner'?[0.60,0.85]:difficulty==='advanced'?[0.92,0.995]:[0.85,0.99];
+  const addRealNear=()=>{
+    const sign=(rng()<0.8?1:-1);
+    const phiMag=phiRange[0]+rng()*(phiRange[1]-phiRange[0]);
+    roots.push({re:1/(sign*phiMag),im:0});
+  };
+  const addComplexNear=()=>{
+    const r=1.01+rng()*(1.18-1.01);
+    const theta=0.2*Math.PI+rng()*0.6*Math.PI;
+    roots.push({re:r*Math.cos(theta),im:r*Math.sin(theta)});
+    roots.push({re:r*Math.cos(theta),im:-r*Math.sin(theta)});
+  };
+  if(p===1){addRealNear();}
+  else{if(rng()<0.25&&p>=2)addComplexNear();else addRealNear();}
+  let need=p-roots.length,i=0;
+  while(i<need){
+    if(need-i>=2&&rng()<0.6){
+      const r=1.3+rng()*0.7;const th=rng()*Math.PI;
+      roots.push({re:r*Math.cos(th),im:r*Math.sin(th)});
+      roots.push({re:r*Math.cos(th),im:-r*Math.sin(th)});i+=2;
+    }else{
+      const sign=(rng()<0.75?1:-1);const r=(1.2+rng()*0.8)*sign;
+      roots.push({re:r,im:0});i+=1;
+    }
+  }
+  const coeffs=makePolyFromRoots(roots);
+  const phi=[];for(let k=1;k<coeffs.length;k++)phi.push(-coeffs[k]);
+  return phi;
+}
+function drawStableAR(p){
+  if(p===0)return[];let tries=0;
+  while(tries++<500){const phi=[];for(let i=0;i<p;i++)phi.push(rnorm()*0.4);const coeffs=new Array(p+1).fill(0);coeffs[0]=1;for(let i=1;i<=p;i++)coeffs[i]=-phi[i-1];if(rootsOutsideUnitCircle(coeffs))return phi;}
+  return Array.from({length:p},()=>(rng()<0.5?-1:1)*0.2*rng());
+}
+function drawInvertibleMA(q){
+  if(q===0)return[];let tries=0;
+  while(tries++<500){const th=[];for(let i=0;i<q;i++)th.push(rnorm()*0.4);const coeffs=new Array(q+1).fill(0);for(let i=0;i<=q;i++)coeffs[i]=(i===0?1:th[i-1]);if(rootsOutsideUnitCircle(coeffs))return th;}
+  return Array.from({length:q},()=>(rng()<0.5?-1:1)*0.2*rng());
+}
+function generateARIMA_NB(T,p,d,q,allowDrift,difficulty){
+  const phi=(d===0?drawNearBoundaryAR(p,difficulty):drawStableAR(p));
+  const theta=drawInvertibleMA(q);
+  const alpha=allowDrift?(rnorm()*0.2):0;
+  const e=Array.from({length:T+200},()=>rnorm());
+  let x=new Array(T+200).fill(0);
+  for(let t=0;t<x.length;t++){
+    let ar=0;for(let i=1;i<=phi.length;i++)if(t-i>=0)ar+=phi[i-1]*x[t-i];
+    let ma=0;for(let j=1;j<=theta.length;j++)if(t-j>=0)ma+=theta[j-1]*e[t-j];
+    x[t]=alpha+ar+e[t]+ma;
+  }
+  if(d===1){let y=new Array(T+200).fill(0);for(let t=1;t<y.length;t++)y[t]=y[t-1]+x[t];return{y:y.slice(-T),phi,theta,d,alpha,trendBeta:0};}
+  return{y:x.slice(-T),phi,theta,d,alpha,trendBeta:0};
+}
+
+/* ===== Trend-stationary DGP ===== */
+function generateTrendStationary(T,p,q,difficulty){
+  // Generate a stationary error process
+  const phi=drawNearBoundaryAR(p,difficulty);
+  const theta=drawInvertibleMA(q);
+  const e=Array.from({length:T+200},()=>rnorm());
+  let x=new Array(T+200).fill(0);
+  for(let t=0;t<x.length;t++){
+    let ar=0;for(let i=1;i<=phi.length;i++)if(t-i>=0)ar+=phi[i-1]*x[t-i];
+    let ma=0;for(let j=1;j<=theta.length;j++)if(t-j>=0)ma+=theta[j-1]*e[t-j];
+    x[t]=ar+e[t]+ma;
+  }
+  const errors=x.slice(-T);
+  const sigmaE=sd(errors);
+
+  // Scale trend coefficient by difficulty relative to error sd
+  // Beginner: obvious trend; Advanced: subtle trend
+  let betaScale;
+  if(difficulty==='beginner') betaScale=4.0+rng()*3.0;       // beta/sigma = 4-7 per T units (obvious)
+  else if(difficulty==='advanced') betaScale=1.5+rng()*1.5;   // beta/sigma = 1.5-3 (visible but requires attention)
+  else betaScale=2.5+rng()*2.5;                                // beta/sigma = 2.5-5 (clearly visible)
+
+  const sign=(rng()<0.5?-1:1);
+  const trendBeta=sign*betaScale*sigmaE/T;
+  const intercept=rnorm()*2;
+
+  const y=[];
+  for(let t=0;t<T;t++){
+    y.push(intercept+trendBeta*(t+1)+errors[t]);
+  }
+  return{y,phi,theta,d:0,alpha:intercept,trendBeta,isTrendStationary:true};
+}
+
+/* ===== Detrend via OLS: y = a + b*t + e ===== */
+function detrendSeries(y){
+  const T=y.length;
+  const X=[];
+  for(let t=0;t<T;t++){
+    X.push([1, t+1]);
+  }
+  const res=OLS(X,y);
+  return{residuals:res.resid, intercept:res.beta[0], slope:res.beta[1]};
+}
+
+/* ===== ADF test ===== */
+function adfTest(y){
+  const T=y.length;
+  const dy=diff(y);
+  // Conservative kmax: floor(4*(T/100)^(2/9)) per Schwert (1989)
+  const kmax=Math.max(0,Math.min(Math.floor(4*Math.pow(T/100,2/9)), Math.floor((T-2)/3)));
+  // Use a FIXED sample starting at index kmax so AIC is comparable across all k
+  const nFixed=dy.length-kmax;
+  if(nFixed<=5) return{k:0,tRho:NaN,alpha:NaN,rho:NaN,n:0};
+  function fitWithLag(k){
+    const X=[],Y=[];
+    // Always start at t=kmax so all models use the same observations
+    for(let t=kmax;t<dy.length;t++){
+      const row=[1,y[t]];for(let i=1;i<=k;i++)row.push(dy[t-i]);
+      X.push(row);Y.push(dy[t]);
+    }
+    const n=Y.length;
+    const res=OLS(X,Y);
+    if(!res||!isFinite(res.s2)||!res.vcov)return null;
+    const seRho=Math.sqrt(Math.abs(res.vcov[1][1]));
+    const tRho=res.beta[1]/seRho;
+    const kParams=2+k;
+    // AIC on fixed sample — use SSR/n (MLE variance) not s2
+    const ssr=res.resid.reduce((a,c)=>a+c*c,0);
+    const AIC=n*Math.log(ssr/n)+2*kParams;
+    return{k,tRho,AIC,alpha:res.beta[0],rho:res.beta[1],n};
+  }
+  let best=null;for(let k=0;k<=kmax;k++){const m=fitWithLag(k);if(!m)continue;if(best===null||m.AIC<best.AIC)best=m;}
+  return best||{k:0,tRho:NaN,alpha:NaN,rho:NaN,n:0};
+}
+
+/* ===== MacKinnon (2010) critical values (intercept only, case 2) ===== */
+function mackinnonCV(T){
+  return{
+    cv01: -3.43035 - 6.5393/T - 16.786/(T*T) - 79.433/(T*T*T),
+    cv05: -2.86154 - 2.8903/T - 4.234/(T*T)  - 40.04/(T*T*T),
+    cv10: -2.56677 - 1.5384/T - 2.809/(T*T)
+  };
+}
+
+/* ===== Evidence zone classification ===== */
+function classifyEvidence(current, useDetrended){
+  const zones = {};
+
+  // For trend-stationary DGPs where the student correctly detrended,
+  // score ACF/ADF/VR against the detrended residual diagnostics
+  const useDt = useDetrended && current.detrendDiag;
+  const diagAcL = useDt ? current.detrendDiag.acL : current.acL;
+  const diagAdf = useDt ? current.detrendDiag.adf : current.adf;
+  const diagCv  = useDt ? current.detrendDiag.cv  : current.cv;
+  const diagVr  = useDt ? current.detrendDiag.vr  : current.vr;
+  const diagT   = useDt ? current.detrendDiag.acL.meta.T : current.meta.T;
+
+  // ACF: check lag-1 value and decay pattern
+  const acfL1 = diagAcL[1] || 0;
+  // Count how many of first 5 lags are above significance band
+  const ciAcf = 1.96/Math.sqrt(diagT);
+  let sigLags = 0;
+  for(let k=1;k<=Math.min(5,diagAcL.length-1);k++){
+    if(Math.abs(diagAcL[k])>ciAcf) sigLags++;
+  }
+  if(acfL1>0.85 && sigLags>=4) zones.acf='NS';
+  else if(acfL1<0.5 && sigLags<=2) zones.acf='S';
+  else zones.acf='ambiguous';
+
+  // ADF
+  const tRho=diagAdf.tRho;
+  if(isFinite(tRho)){
+    if(tRho<diagCv.cv05) zones.adf='S';           // reject unit root
+    else if(tRho>diagCv.cv10) zones.adf='NS';     // clearly fail to reject
+    else zones.adf='ambiguous';                     // between 5% and 10%
+  } else {
+    zones.adf='ambiguous';
+  }
+
+  // Variance ratio
+  if(diagVr<0.35) zones.vr='NS';
+  else if(diagVr>0.65) zones.vr='S';
+  else zones.vr='ambiguous';
+
+  // Visual: always treated as subjective
+  zones.visual='subjective';
+
+  return zones;
+}
+
+/* ===== Drawing ===== */
+function drawLine(canvas,series,opts){
+  opts=opts||{};
+  const ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);
+  const px=40,py=18;const n=series.length;
+  const mn=Math.min(...series),mx=Math.max(...series);
+  const pad=(mx-mn)||1;const ymin=mn-0.1*pad,ymax=mx+0.1*pad;
+  // Grid
+  ctx.strokeStyle='#e6e6e6';ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){const y=py+(H-2*py)*i/5;ctx.beginPath();ctx.moveTo(px,y);ctx.lineTo(W-10,y);ctx.stroke();}
+  // Axes
+  ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px,H-py);ctx.lineTo(W-10,H-py);ctx.moveTo(px,py);ctx.lineTo(px,H-py);ctx.stroke();
+  // Y-axis labels
+  ctx.fillStyle='#666';ctx.font='10px system-ui';ctx.textAlign='right';
+  for(let i=0;i<=5;i++){
+    const val=ymax-(ymax-ymin)*i/5;
+    const y=py+(H-2*py)*i/5;
+    ctx.fillText(val.toFixed(1),px-4,y+3);
+  }
+  // X-axis labels
+  ctx.textAlign='center';
+  const step=Math.max(1,Math.floor(n/5));
+  for(let i=0;i<n;i+=step){
+    const x=px+(W-px-10)*i/(n-1);
+    ctx.fillText(i+1,x,H-3);
+  }
+  // Trend line overlay
+  if(opts.trendIntercept!==undefined && opts.trendSlope!==undefined){
+    ctx.strokeStyle='#d62728';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();
+    for(let i=0;i<n;i++){
+      const tv=opts.trendIntercept+opts.trendSlope*(i+1);
+      const x=px+(W-px-10)*i/(n-1);
+      const y=py+(H-2*py)*(1-(tv-ymin)/(ymax-ymin));
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();ctx.setLineDash([]);
+  }
+  // Series
+  ctx.strokeStyle='#1f77b4';ctx.lineWidth=1.5;ctx.beginPath();
+  for(let i=0;i<n;i++){
+    const x=px+(W-px-10)*i/(n-1);const y=py+(H-2*py)*(1-(series[i]-ymin)/(ymax-ymin));
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }ctx.stroke();
+}
+
+function drawBars(canvas,values,maxLag){
+  const ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);
+  const px=40,py=18;const m=maxLag||values.length-1;
+  // Grid
+  ctx.strokeStyle='#e6e6e6';
+  for(let i=0;i<=4;i++){const y=py+(H-2*py)*i/4;ctx.beginPath();ctx.moveTo(px,y);ctx.lineTo(W-10,y);ctx.stroke();}
+  // Axes
+  ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.beginPath();
+  const zeroY=py+(H-2*py)*0.5;
+  ctx.moveTo(px,zeroY);ctx.lineTo(W-10,zeroY);ctx.moveTo(px,py);ctx.lineTo(px,H-py);ctx.stroke();
+  // Y-axis labels
+  ctx.fillStyle='#666';ctx.font='10px system-ui';ctx.textAlign='right';
+  for(let v=-1;v<=1;v+=0.5){
+    const y=py+(H-2*py)*(1-(v*0.5+0.5));
+    ctx.fillText(v.toFixed(1),px-4,y+3);
+  }
+  // CI bands
+  const T=values.meta?values.meta.T:m*2;
+  const ci=1.96/Math.sqrt(T);
+  const ciTop=py+(H-2*py)*(1-(ci*0.5+0.5));
+  const ciBot=py+(H-2*py)*(1-(-ci*0.5+0.5));
+  ctx.strokeStyle='#bbb';ctx.setLineDash([4,3]);ctx.beginPath();
+  ctx.moveTo(px,ciTop);ctx.lineTo(W-10,ciTop);ctx.moveTo(px,ciBot);ctx.lineTo(W-10,ciBot);ctx.stroke();ctx.setLineDash([]);
+  // Bars
+  const bw=(W-px-10)/(m+1);
+  ctx.textAlign='center';
+  const labelStep=m<=20?1:m<=40?2:5;
+  for(let k=1;k<=m&&k<values.length;k++){
+    const v=Math.max(-1,Math.min(1,values[k]));
+    const x=px+bw*(k-0.5);
+    const base=zeroY;
+    const y=py+(H-2*py)*(1-(v*0.5+0.5));
+    ctx.fillStyle='#1f77b4';
+    ctx.fillRect(x-bw*0.35,Math.min(base,y),bw*0.7,Math.abs(base-y));
+    if(k%labelStep===0||k===1){
+      ctx.fillStyle='#666';ctx.font='9px system-ui';
+      ctx.fillText(k,x,H-3);
+    }
+  }
+}
+
+/* ===== Difficulty presets ===== */
+const DIFFICULTY={
+  beginner:  {tmin:80, tmax:200, pmax:1, qmax:0, drift:false, label:'Beginner'},
+  intermediate:{tmin:40, tmax:120, pmax:1, qmax:0, drift:true,  label:'Intermediate'},
+  advanced:  {tmin:30, tmax:80,  pmax:2, qmax:1, drift:true,  label:'Advanced'},
+};
+let currentDifficulty='intermediate';
+
+/* ===== Session + UI ===== */
+const els={
+  btnGenerate:document.getElementById('btn-generate'),
+  btnSame:document.getElementById('btn-same'),
+  btnStat:document.getElementById('btn-stationary'),
+  btnNon:document.getElementById('btn-nonstationary'),
+  btnTrend:document.getElementById('btn-trendstat'),
+  btnDetrend:document.getElementById('btn-detrend'),
+  viewToggle:document.getElementById('view-toggle-container'),
+  viewOriginal:document.getElementById('view-original'),
+  viewDetrended:document.getElementById('view-detrended'),
+  trendInfo:document.getElementById('trend-info'),
+  score:document.getElementById('score'),
+  streak:document.getElementById('streak-display'),
+  truth:document.getElementById('truth'),
+  adfEq:document.getElementById('adf-eq'),
+  adfOut:document.getElementById('adf-out'),
+  adfCv:document.getElementById('adf-cv'),
+  adfVerdict:document.getElementById('adf-verdict'),
+  adfRef:document.getElementById('adf-ref'),
+  vrOut:document.getElementById('vr-out'),
+  vrVerdict:document.getElementById('vr-verdict'),
+  expBox:document.getElementById('explanation-box'),
+  expText:document.getElementById('explanation'),
+  scorecardBox:document.getElementById('scorecard-box'),
+  pns:document.getElementById('inp-pns'),
+  pts:document.getElementById('inp-pts'),
+  seed:document.getElementById('inp-seed'),
+  drift:document.getElementById('inp-drift'),
+  pmax:document.getElementById('inp-pmax'),
+  qmax:document.getElementById('inp-qmax'),
+  tmin:document.getElementById('inp-tmin'),
+  tmax:document.getElementById('inp-tmax'),
+  reset:document.getElementById('btn-reset'),
+  download:document.getElementById('btn-download'),
+  lblLevels:document.getElementById('lbl-levels'),
+  lblDiff:document.getElementById('lbl-diff'),
+  lblAcf:document.getElementById('lbl-acf'),
+  lblAcfD:document.getElementById('lbl-acfd'),
+  lblPacf:document.getElementById('lbl-pacf'),
+  lblPacfD:document.getElementById('lbl-pacfd'),
+  canv:{
+    levels:document.getElementById('plot-levels'),
+    diff:document.getElementById('plot-diff'),
+    acfL:document.getElementById('acf-levels'),
+    acfD:document.getElementById('acf-diff'),
+    pacfL:document.getElementById('pacf-levels'),
+    pacfD:document.getElementById('pacf-diff'),
+  }
+};
+for(const c of Object.values(els.canv)){c.width=600;c.height=220;}
+
+// Difficulty buttons
+document.querySelectorAll('.difficulty-bar button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const id=btn.id.replace('diff-','');
+    currentDifficulty=id;
+    document.querySelectorAll('.difficulty-bar button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const preset=DIFFICULTY[id];
+    els.tmin.value=preset.tmin;els.tmax.value=preset.tmax;
+    els.pmax.value=preset.pmax;els.qmax.value=preset.qmax;
+    els.drift.checked=preset.drift;
+  });
+});
+
+// Evidence radio helpers
+function getEvidenceSelections(){
+  const evs={};
+  ['visual','acf','adf','vr'].forEach(name=>{
+    const checked=document.querySelector(`input[name="ev-${name}"]:checked`);
+    evs[name]=checked?checked.value:null;
+  });
+  return evs;
+}
+function resetEvidence(){
+  document.querySelectorAll('.evidence-radio').forEach(r=>{r.checked=false;r.disabled=false;});
+  document.querySelectorAll('.evidence-result').forEach(el=>el.remove());
+}
+function lockEvidence(){
+  document.querySelectorAll('.evidence-radio').forEach(r=>{r.disabled=true;});
+}
+function showEvidenceResults(zones,truthLabel){
+  // truthLabel: 'S', 'NS', or 'TS' (trend stationary treated as S for evidence purposes - residuals are stationary)
+  const truthEv=(truthLabel==='NS')?'NS':'S'; // trend-stationary series have stationary residuals
+  const selections=getEvidenceSelections();
+  ['visual','acf','adf','vr'].forEach(name=>{
+    const row=document.querySelector(`tr[data-ev="${name}"]`);
+    const existingDot=row.querySelector('.evidence-result');
+    if(existingDot) existingDot.remove();
+    const sel=selections[name];
+    if(!sel) return; // student didn't assess this one
+    const zone=zones[name];
+    const dot=document.createElement('span');
+    dot.classList.add('evidence-result');
+    if(zone==='subjective' || zone==='ambiguous'){
+      dot.classList.add('ev-ambiguous');
+      dot.title=(zone==='subjective')?'Visual assessment is subjective':'Evidence was genuinely ambiguous here';
+    } else if(sel===zone){
+      dot.classList.add('ev-correct');
+      dot.title='You correctly read what this evidence showed';
+    } else {
+      dot.classList.add('ev-incorrect');
+      dot.title='This evidence pointed the other way — check the diagnostic again';
+    }
+    row.querySelector('td:first-child').appendChild(dot);
+  });
+}
+
+// Session persistence
+const storeKey='stationarity-trainer-v3';
+function loadSession(){try{const s=JSON.parse(localStorage.getItem(storeKey)||'{}');return{correct:s.correct||0,total:s.total||0,currentStreak:s.currentStreak||0,bestStreak:s.bestStreak||0,history:s.history||[]};}catch(e){return{correct:0,total:0,currentStreak:0,bestStreak:0,history:[]};}}
+function saveSession(s){localStorage.setItem(storeKey,JSON.stringify(s));}
+function updateScore(){
+  const s=loadSession();
+  const pct=s.total?((100*s.correct/s.total).toFixed(1)+'%'):'--';
+  els.score.textContent=`${s.correct} / ${s.total} (${pct})`;
+  if(s.currentStreak>=3){
+    els.streak.innerHTML=`<span class="streak-badge hot">${s.currentStreak} streak</span>`;
+  }else if(s.total>0&&s.currentStreak===0){
+    els.streak.innerHTML=`<span class="streak-badge cold">best: ${s.bestStreak}</span>`;
+  }else{
+    els.streak.innerHTML='';
+  }
+}
+
+let current=null;
+let answered=false;
+let viewingDetrended=false;
+let detrendData=null;
+
+/* ===== Display helpers ===== */
+function displayDiagnostics(y,dy,T,labelPrefix){
+  const L=Math.min(40,Math.floor(10*Math.log10(T)));
+  const acL=acf(y,L);acL.meta={T:T};
+  const acD=acf(dy,Math.max(1,L));acD.meta={T:dy.length};
+  const pcL=pacf(y,L);pcL.meta={T:T};
+  const pcD=pacf(dy,Math.max(1,L));pcD.meta={T:dy.length};
+  drawBars(els.canv.acfL,acL,L);
+  drawBars(els.canv.acfD,acD,Math.max(1,L));
+  drawBars(els.canv.pacfL,pcL,L);
+  drawBars(els.canv.pacfD,pcD,Math.max(1,L));
+
+  // Update plot labels
+  if(labelPrefix){
+    els.lblLevels.innerHTML=`${labelPrefix}`;
+    els.lblDiff.innerHTML=`First differences of ${labelPrefix.toLowerCase()}`;
+    els.lblAcf.innerHTML=`ACF (${labelPrefix.toLowerCase()})`;
+    els.lblAcfD.innerHTML=`ACF (first diff. of ${labelPrefix.toLowerCase()})`;
+    els.lblPacf.innerHTML=`PACF (${labelPrefix.toLowerCase()})`;
+    els.lblPacfD.innerHTML=`PACF (first diff. of ${labelPrefix.toLowerCase()})`;
+  }
+
+  // ADF
+  const adf=adfTest(y);
+  els.adfEq.textContent=`\u0394y_t = \u03B1 + \u03C1 y_{t-1} + ${adf.k>0?`\u03A3_{i=1}^{${adf.k}} \u03B3_i \u0394y_{t-i}`:'(no lags)'} + \u03B5_t`;
+  els.adfOut.innerHTML='';
+  function addKV(k,v){const d1=document.createElement('div');d1.textContent=k;const d2=document.createElement('div');d2.textContent=v;els.adfOut.appendChild(d1);els.adfOut.appendChild(d2);}
+  addKV('t-stat (\u03C1)',isFinite(adf.tRho)?adf.tRho.toFixed(3):'NaN');
+  addKV('lag k (AIC)',adf.k);
+  addKV('n used',adf.n);
+
+  const cv=mackinnonCV(adf.n||T);
+  els.adfCv.innerHTML=`
+    <div class="cv-row">
+      <div class="cv-item"><div class="cv-label">1% CV</div><div class="cv-val">${cv.cv01.toFixed(3)}</div></div>
+      <div class="cv-item"><div class="cv-label">5% CV</div><div class="cv-val">${cv.cv05.toFixed(3)}</div></div>
+      <div class="cv-item"><div class="cv-label">10% CV</div><div class="cv-val">${cv.cv10.toFixed(3)}</div></div>
+    </div>`;
+  els.adfRef.innerHTML='MacKinnon (2010) response surface approximation for ADF \u03C4<sub>c</sub> (intercept, no trend).';
+
+  if(isFinite(adf.tRho)){
+    if(adf.tRho<cv.cv01)els.adfVerdict.innerHTML='<span class="reject">Reject H\u2080 at 1% \u2192 evidence of stationarity</span>';
+    else if(adf.tRho<cv.cv05)els.adfVerdict.innerHTML='<span class="reject">Reject H\u2080 at 5% \u2192 evidence of stationarity</span>';
+    else if(adf.tRho<cv.cv10)els.adfVerdict.innerHTML='<span class="reject">Reject H\u2080 at 10% \u2192 weak evidence of stationarity</span>';
+    else els.adfVerdict.innerHTML='<span class="fail-reject">Fail to reject H\u2080 \u2192 insufficient evidence against unit root</span>';
+  }
+
+  // Variance ratio
+  const sdy=sd(y);const sdd=sd(dy);const vr=sdd/sdy;
+  els.vrOut.innerHTML='';
+  function addKVR(k,v){const d1=document.createElement('div');d1.textContent=k;const d2=document.createElement('div');d2.textContent=v;els.vrOut.appendChild(d1);els.vrOut.appendChild(d2);}
+  addKVR('sd(\u0394y) / sd(y)',vr.toFixed(3));
+  addKVR('sd(\u0394y)',sdd.toFixed(3));
+  addKVR('sd(y)',sdy.toFixed(3));
+  if(vr<0.5){
+    els.vrVerdict.innerHTML='<div class="vr-guide vr-diff">Ratio < 0.5 \u2192 rule of thumb suggests differencing (possible unit root)</div>';
+  }else{
+    els.vrVerdict.innerHTML='<div class="vr-guide vr-level">Ratio \u2265 0.5 \u2192 rule of thumb suggests keeping levels (possible stationarity)</div>';
+  }
+
+  return{acL,acD,pcL,pcD,adf,cv,vr};
+}
+
+function showOriginalView(){
+  viewingDetrended=false;
+  els.viewOriginal.classList.add('active');
+  els.viewDetrended.classList.remove('active');
+  drawLine(els.canv.levels,current.y,
+    detrendData?{trendIntercept:detrendData.intercept,trendSlope:detrendData.slope}:{});
+  drawLine(els.canv.diff,current.dy);
+  // Re-display original diagnostics
+  const diag=displayDiagnostics(current.y,current.dy,current.meta.T,'Levels y<sub>t</sub>');
+  // Restore original labels
+  els.lblLevels.innerHTML='Levels y<sub>t</sub>';
+  els.lblDiff.innerHTML='First differences \u0394y<sub>t</sub>';
+  els.lblAcf.innerHTML='ACF (levels)';
+  els.lblAcfD.innerHTML='ACF (first differences)';
+  els.lblPacf.innerHTML='PACF (levels)';
+  els.lblPacfD.innerHTML='PACF (first differences)';
+  // Restore stored diagnostics
+  current.adf=diag.adf;current.cv=diag.cv;current.vr=diag.vr;
+  current.acL=diag.acL;current.acD=diag.acD;current.pcL=diag.pcL;current.pcD=diag.pcD;
+}
+
+function showDetrendedView(){
+  if(!detrendData) return;
+  viewingDetrended=true;
+  els.viewDetrended.classList.add('active');
+  els.viewOriginal.classList.remove('active');
+  const resid=detrendData.residuals;
+  const dresid=diff(resid);
+  drawLine(els.canv.levels,resid);
+  drawLine(els.canv.diff,dresid);
+  const diag=displayDiagnostics(resid,dresid,resid.length,'Detrended residuals \u00EA<sub>t</sub>');
+  // Update current diagnostics to reflect detrended view
+  current.detrendDiag=diag;
+}
+
+/* ===== Generate ===== */
+function generate(useSame){
+  answered=false;
+  viewingDetrended=false;
+  detrendData=null;
+  els.btnStat.disabled=false;els.btnNon.disabled=false;els.btnTrend.disabled=false;
+  els.truth.textContent='(answer to reveal)';
+  els.expBox.style.display='none';
+  els.scorecardBox.style.display='none';
+  els.scorecardBox.innerHTML='';
+  els.adfVerdict.innerHTML='';
+  els.viewToggle.style.display='none';
+  els.trendInfo.style.display='none';
+  els.btnDetrend.textContent='I think there is a trend in this series';
+  els.btnDetrend.disabled=false;
+  resetEvidence();
+
+  const tmin=parseInt(els.tmin.value)||40;
+  const tmax=parseInt(els.tmax.value)||120;
+  const pns=parseFloat(els.pns.value);
+  const pts=parseFloat(els.pts.value);
+  const pmax=Math.min(3,Math.max(0,parseInt(els.pmax.value)));
+  const qmax=Math.min(2,Math.max(0,parseInt(els.qmax.value)));
+  const sdSeed=els.seed.value.trim();if(!useSame)setSeed(sdSeed||null);
+
+  const meta=useSame&&current?current.meta:(function(){
+    const T=tmin+Math.floor(rng()*(tmax-tmin+1));
+    const roll=rng();
+    let dgpType;
+    if(roll<pns) dgpType='nonstationary';
+    else if(roll<pns+pts) dgpType='trendstationary';
+    else dgpType='stationary';
+    const p=Math.floor(rng()*(pmax+1));
+    const q=Math.floor(rng()*(qmax+1));
+    return{T,p,d:dgpType==='nonstationary'?1:0,q,dgpType};
+  })();
+  const Tuse=useSame&&current?current.meta.T:meta.T;
+
+  let gen;
+  if(meta.dgpType==='trendstationary'){
+    gen=generateTrendStationary(Tuse,meta.p,meta.q,currentDifficulty);
+  } else {
+    gen=generateARIMA_NB(Tuse,meta.p,meta.d,meta.q,els.drift.checked,currentDifficulty);
+  }
+  const y=gen.y;
+  const dy=diff(y);
+
+  // Plots
+  drawLine(els.canv.levels,y);
+  drawLine(els.canv.diff,dy);
+  const diag=displayDiagnostics(y,dy,Tuse,null);
+  // Reset labels to default
+  els.lblLevels.innerHTML='Levels y<sub>t</sub>';
+  els.lblDiff.innerHTML='First differences \u0394y<sub>t</sub>';
+  els.lblAcf.innerHTML='ACF (levels)';
+  els.lblAcfD.innerHTML='ACF (first differences)';
+  els.lblPacf.innerHTML='PACF (levels)';
+  els.lblPacfD.innerHTML='PACF (first differences)';
+
+  current={
+    y,dy,
+    acL:diag.acL,acD:diag.acD,pcL:diag.pcL,pcD:diag.pcD,
+    adf:diag.adf,cv:diag.cv,vr:diag.vr,
+    meta:{p:meta.p,d:meta.d,q:meta.q,T:Tuse,dgpType:meta.dgpType},
+    params:{phi:gen.phi,theta:gen.theta,alpha:gen.alpha,trendBeta:gen.trendBeta||0}
+  };
+}
+
+/* ===== Detrend button ===== */
+els.btnDetrend.addEventListener('click',()=>{
+  if(!current||answered) return;
+  if(detrendData){
+    // Already detrended — toggle view
+    if(viewingDetrended) showOriginalView();
+    else showDetrendedView();
+    return;
+  }
+  // First click: compute detrend
+  const dt=detrendSeries(current.y);
+  detrendData=dt;
+  els.viewToggle.style.display='block';
+  els.trendInfo.style.display='block';
+  els.trendInfo.textContent=`OLS trend: \u0177_t = ${dt.intercept.toFixed(3)} + ${dt.slope.toFixed(5)} \u00D7 t`;
+  els.btnDetrend.textContent='Toggle original / detrended';
+  // Show original with trend line overlay first
+  drawLine(els.canv.levels,current.y,{trendIntercept:dt.intercept,trendSlope:dt.slope});
+  // Then switch to detrended view
+  showDetrendedView();
+});
+
+// View toggle buttons
+els.viewOriginal.addEventListener('click',()=>{if(current&&detrendData) showOriginalView();});
+els.viewDetrended.addEventListener('click',()=>{if(current&&detrendData) showDetrendedView();});
+
+/* ===== Explanation builder ===== */
+function buildExplanation(){
+  const{meta,params}=current;
+  const dgpType=meta.dgpType;
+  const isStationary=dgpType==='stationary';
+  const isTrend=dgpType==='trendstationary';
+  const isNonstat=dgpType==='nonstationary';
+
+  // For trend-stationary DGPs where the student detrended, report both
+  // the original and detrended diagnostics so the explanation is complete
+  const origAdf=current.adf, origCv=current.cv, origVr=current.vr;
+  const studentDetrended=isTrend && detrendData && current.detrendDiag;
+  const dtAdf=studentDetrended?current.detrendDiag.adf:null;
+  const dtCv=studentDetrended?current.detrendDiag.cv:null;
+  const dtVr=studentDetrended?current.detrendDiag.vr:null;
+
+  // For non-trend DGPs, use original diagnostics as before
+  const adf=origAdf, cv=origCv, vr=origVr;
+
+  let lines=[];
+
+  if(isTrend){
+    lines.push(`<b>True DGP:</b> Trend-stationary (deterministic linear trend + stationary errors)`);
+    lines.push(`<b>Trend:</b> \u03B2 = ${params.trendBeta.toFixed(5)} per period`);
+  } else if(isStationary){
+    lines.push(`<b>True DGP:</b> Stationary (no unit root, no deterministic trend)`);
+  } else {
+    lines.push(`<b>True DGP:</b> Non-stationary (unit root, d=1)`);
+  }
+  lines.push('');
+  lines.push('<b>Evidence review:</b>');
+
+  // Visual
+  if(isTrend){
+    const steep=Math.abs(params.trendBeta*meta.T)>2;
+    lines.push('\u2022 <b>Visual:</b> '+(steep
+      ?'The series shows a clear upward or downward drift. The key question is whether this is a deterministic trend (trend-stationary) or stochastic drift (unit root). Both can look similar in plots.'
+      :'The trend was subtle here. Distinguishing a weak deterministic trend from a unit root with drift is one of the hardest calls in applied time series.'));
+  } else if(isStationary){
+    lines.push('\u2022 <b>Visual:</b> A stationary series should fluctuate around a stable mean with roughly constant spread. This one does'+(Math.abs(params.phi[0]||0)>0.9?' (though high persistence can make it look trendy in small samples).':'.'));
+  } else {
+    lines.push('\u2022 <b>Visual:</b> The levels show wandering behavior without a clear stable mean \u2014 characteristic of a unit root process.');
+  }
+
+  // ACF
+  if(isTrend){
+    if(studentDetrended){
+      lines.push('\u2022 <b>ACF:</b> In levels, the ACF decayed slowly due to the deterministic trend inflating autocorrelations. After detrending, the ACF of the residuals should decay faster, consistent with the underlying stationary error process.');
+    } else {
+      lines.push('\u2022 <b>ACF:</b> A trend-stationary series has a slowly decaying ACF in levels (because the trend inflates the autocorrelations), which can mimic a unit root. This is why detrending first is important \u2014 the ACF of the residuals should decay faster.');
+    }
+  } else if(isStationary){
+    lines.push('\u2022 <b>ACF:</b> Decays toward zero'+(Math.abs(params.phi[0]||0)>0.9?', though slowly due to high persistence. Near-boundary stationary series can have ACFs that mimic unit roots in small samples.':' relatively quickly, consistent with stationarity.'));
+  } else {
+    lines.push('\u2022 <b>ACF:</b> Slow, near-linear decay \u2014 the hallmark of a unit root. The series "remembers" all past shocks.');
+  }
+
+  // ADF
+  if(isTrend){
+    const origRejected=isFinite(origAdf.tRho)&&origAdf.tRho<origCv.cv05;
+    if(studentDetrended){
+      const dtRejected=isFinite(dtAdf.tRho)&&dtAdf.tRho<dtCv.cv05;
+      lines.push(`\u2022 <b>ADF (original):</b> t-stat (${origAdf.tRho.toFixed(3)}) vs. 5% CV (${origCv.cv05.toFixed(3)}) \u2192 ${origRejected?'rejects':'fails to reject'}. The intercept-only ADF on the raw series ${origRejected?'happened to reject, but':'was confused by the trend \u2014'} detrending first is the principled approach.`);
+      lines.push(`\u2022 <b>ADF (detrended residuals):</b> t-stat (${dtAdf.tRho.toFixed(3)}) vs. 5% CV (${dtCv.cv05.toFixed(3)}) \u2192 ${dtRejected?'rejects unit root, confirming the residuals are stationary.':'fails to reject. This can happen with near-boundary persistence in the error process or small T, even though the true errors are stationary.'}`);
+    } else {
+      if(origRejected){
+        lines.push(`\u2022 <b>ADF:</b> t-stat (${origAdf.tRho.toFixed(3)}) < 5% CV (${origCv.cv05.toFixed(3)}) \u2192 rejects unit root. The ADF test (intercept only) may reject for trend-stationary series because the detrended component is stationary, though power depends on trend strength and T.`);
+      } else {
+        lines.push(`\u2022 <b>ADF:</b> t-stat (${origAdf.tRho.toFixed(3)}) > 5% CV (${origCv.cv05.toFixed(3)}) \u2192 fails to reject. Trend-stationary series can fool the ADF when the trend dominates and the intercept-only specification doesn't account for it. Detrending first, then testing the residuals, is the correct approach.`);
+      }
+    }
+  } else {
+    const rejected=isFinite(adf.tRho)&&adf.tRho<cv.cv05;
+    if(isStationary&&rejected){
+      lines.push(`\u2022 <b>ADF:</b> t-stat (${adf.tRho.toFixed(3)}) < 5% CV (${cv.cv05.toFixed(3)}) \u2192 correctly rejects unit root.`);
+    } else if(isStationary&&!rejected){
+      lines.push(`\u2022 <b>ADF:</b> t-stat (${adf.tRho.toFixed(3)}) > 5% CV (${cv.cv05.toFixed(3)}) \u2192 fails to reject. This is a <b>Type II error</b> \u2014 the ADF test has low power, especially for near-boundary stationary series with small T.`);
+    } else if(isNonstat&&!rejected){
+      lines.push(`\u2022 <b>ADF:</b> t-stat (${adf.tRho.toFixed(3)}) > 5% CV (${cv.cv05.toFixed(3)}) \u2192 correctly fails to reject the unit root null.`);
+    } else {
+      lines.push(`\u2022 <b>ADF:</b> t-stat (${adf.tRho.toFixed(3)}) < 5% CV (${cv.cv05.toFixed(3)}) \u2192 incorrectly rejects. This is a <b>Type I error</b> \u2014 less common but possible, especially with drift or large T.`);
+    }
+  }
+
+  // VR
+  if(isTrend){
+    const origVrSuggests=origVr<0.5?'differencing':'levels';
+    if(studentDetrended){
+      const dtVrSuggests=dtVr<0.5?'differencing':'levels';
+      lines.push(`\u2022 <b>Variance ratio (original):</b> ${origVr.toFixed(3)} \u2192 suggests ${origVrSuggests}. The trend inflates sd(y) relative to sd(\u0394y), so this ratio is unreliable on the raw series.`);
+      lines.push(`\u2022 <b>Variance ratio (detrended):</b> ${dtVr.toFixed(3)} \u2192 suggests ${dtVrSuggests}. ${dtVrSuggests==='levels'?'Consistent with the residuals being stationary.':'The ratio still suggests differencing \u2014 this can happen with high persistence in the error process.'}`);
+    } else {
+      lines.push(`\u2022 <b>Variance ratio:</b> ${origVr.toFixed(3)} \u2192 suggests ${origVrSuggests}. For trend-stationary series, the variance ratio can be misleading because the trend inflates sd(y) relative to sd(\u0394y).`);
+    }
+  } else {
+    const vrSuggests=vr<0.5?'differencing':'levels';
+    const vrCorrect=(isStationary&&vrSuggests==='levels')||(!isStationary&&vrSuggests==='differencing');
+    lines.push(`\u2022 <b>Variance ratio:</b> ${vr.toFixed(3)} \u2192 suggests ${vrSuggests}. ${vrCorrect?'Consistent with the truth.':'Misleading here \u2014 remember this is a rule of thumb, not a test.'}`);
+  }
+
+  // Over-differencing warning for trend-stationary
+  if(isTrend){
+    lines.push('');
+    lines.push('<b>Important:</b> A trend-stationary series does <em>not</em> have a unit root. The correct treatment is to detrend (remove the deterministic trend), not to difference. Differencing a trend-stationary series will make it stationary, but it <b>over-differences</b> \u2014 introducing an unnecessary MA(1) component that distorts the series\u2019 dynamics. The proper approach: regress on time, analyze the residuals.');
+  }
+
+  return lines.join('<br>');
+}
+
+/* ===== Scorecard ===== */
+function buildScorecard(answerLabel,correct){
+  const selections=getEvidenceSelections();
+  const shouldUseDetrended = current.meta.dgpType==='trendstationary' && detrendData && current.detrendDiag;
+  const zones=classifyEvidence(current, shouldUseDetrended);
+  const truthEv=(current.meta.dgpType==='nonstationary')?'NS':'S';
+
+  let assessed=0, correctCount=0, ambigCount=0, incorrectCount=0;
+  const items=[];
+  ['visual','acf','adf','vr'].forEach(name=>{
+    const sel=selections[name];
+    if(!sel) return;
+    assessed++;
+    const zone=zones[name];
+    if(zone==='subjective'||zone==='ambiguous'){
+      ambigCount++;
+      items.push({name,result:'ambiguous'});
+    } else if(sel===zone){
+      correctCount++;
+      items.push({name,result:'correct'});
+    } else {
+      incorrectCount++;
+      items.push({name,result:'incorrect'});
+    }
+  });
+
+  let html='<div class="scorecard"><div class="sc-title">Evidence scorecard</div>';
+  if(assessed===0){
+    html+='<div>No evidence assessed. Try using the checklist before answering next time!</div>';
+  } else {
+    const parts=[];
+    if(correctCount>0) parts.push(`<span style="color:var(--ok);">${correctCount} correct</span>`);
+    if(ambigCount>0) parts.push(`<span style="color:var(--ambig);">${ambigCount} ambiguous</span>`);
+    if(incorrectCount>0) parts.push(`<span style="color:var(--bad);">${incorrectCount} incorrect</span>`);
+    html+=`<div>You assessed ${assessed} of 4 evidence items: ${parts.join(', ')}.</div>`;
+  }
+  html+='</div>';
+
+  // Conflicting evidence flag
+  const selValues=Object.values(selections).filter(v=>v!==null);
+  const hasS=selValues.includes('S');
+  const hasNS=selValues.includes('NS');
+  if(hasS&&hasNS){
+    html+=`<div class="conflict-flag"><b>Your evidence was mixed.</b> This is common for near-boundary series. When facing genuine uncertainty, it is generally safer to err on the side of taking a difference to guard against spurious regression (Granger &amp; Newbold, 1974).</div>`;
+  }
+
+  return html;
+}
+
+/* ===== Reveal and record ===== */
+function reveal(correct,answerLabel){
+  const{meta,params}=current;
+  let label;
+  if(meta.dgpType==='trendstationary') label=`Trend-stationary (p=${meta.p}, q=${meta.q})`;
+  else if(meta.d===0) label=`ARMA(${meta.p},${meta.q})`;
+  else label=`ARIMA(${meta.p},1,${meta.q})`;
+
+  const phiStr=params.phi.length?params.phi.map(v=>v.toFixed(3)).join(', '):'\u2014';
+  const thStr=params.theta.length?params.theta.map(v=>v.toFixed(3)).join(', '):'\u2014';
+  const aStr=(params.alpha!==undefined)?params.alpha.toFixed(3):'0.000';
+  const pillClass=correct?'correct':'incorrect';
+  const mark=correct?'\u2714':'\u2716';
+
+  let truthHTML=`<div class="pill ${pillClass}">${mark} ${label} (T=${meta.T})</div>
+  <div style="margin-top:4px;">\u03B1: ${aStr}</div>
+  <div>\u03C6: [${phiStr}]</div>
+  <div>\u03B8: [${thStr}]</div>`;
+  if(meta.dgpType==='trendstationary'){
+    truthHTML+=`<div>\u03B2 (trend): ${params.trendBeta.toFixed(5)}</div>`;
+  }
+  els.truth.innerHTML=truthHTML;
+
+  // Evidence results — for trend-stationary DGPs, score against detrended diagnostics
+  // if the student correctly detrended; otherwise score against original
+  const shouldUseDetrended = meta.dgpType==='trendstationary' && detrendData && current.detrendDiag;
+  const zones=classifyEvidence(current, shouldUseDetrended);
+  showEvidenceResults(zones,meta.dgpType==='nonstationary'?'NS':(meta.dgpType==='trendstationary'?'TS':'S'));
+  lockEvidence();
+
+  // Scorecard
+  els.scorecardBox.innerHTML=buildScorecard(answerLabel,correct);
+  els.scorecardBox.style.display='block';
+
+  // Explanation
+  els.expBox.style.display='block';
+  els.expText.innerHTML=buildExplanation();
+}
+
+function recordAnswer(answerType){
+  // answerType: 'stationary', 'nonstationary', 'trendstationary'
+  if(!current||answered)return;
+  answered=true;
+  els.btnStat.disabled=true;els.btnNon.disabled=true;els.btnTrend.disabled=true;
+  els.btnDetrend.disabled=true;
+
+  const truthType=current.meta.dgpType; // 'stationary','nonstationary','trendstationary'
+  const correct=(answerType===truthType);
+  reveal(correct,answerType);
+
+  const sess=loadSession();
+  sess.total+=1;
+  if(correct){sess.correct+=1;sess.currentStreak+=1;if(sess.currentStreak>sess.bestStreak)sess.bestStreak=sess.currentStreak;}
+  else{sess.currentStreak=0;}
+  sess.history.push({
+    ts:Date.now(),T:current.meta.T,p:current.meta.p,q:current.meta.q,d:current.meta.d,
+    dgpType:truthType,answer:answerType,
+    tRho:current.adf.tRho,k:current.adf.k,correct,difficulty:currentDifficulty
+  });
+  saveSession(sess);updateScore();
+}
+
+function resetSession(){saveSession({correct:0,total:0,currentStreak:0,bestStreak:0,history:[]});updateScore();}
+function downloadCSV(){
+  const s=loadSession();
+  const rows=[['timestamp','T','p','d','q','dgpType','answer','tRho','k','correct','difficulty']];
+  for(const h of s.history)rows.push([new Date(h.ts).toISOString(),h.T,h.p,h.d||0,h.q,(h.dgpType||''),(h.answer||''),(h.tRho||'').toString(),h.k,h.correct?1:0,h.difficulty||'']);
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='stationarity_session.csv';a.click();URL.revokeObjectURL(url);
+}
+
+/* ===== Event wiring ===== */
+els.btnGenerate.addEventListener('click',()=>generate(false));
+els.btnSame.addEventListener('click',()=>generate(true));
+els.btnStat.addEventListener('click',()=>recordAnswer('stationary'));
+els.btnNon.addEventListener('click',()=>recordAnswer('nonstationary'));
+els.btnTrend.addEventListener('click',()=>recordAnswer('trendstationary'));
+els.reset.addEventListener('click',resetSession);
+els.download.addEventListener('click',downloadCSV);
+
+// Keyboard shortcuts
+document.addEventListener('keydown',(e)=>{
+  if(e.target.tagName==='INPUT')return;
+  const key=e.key.toLowerCase();
+  if(key==='g'){e.preventDefault();generate(false);}
+  else if(key==='s'&&!answered){e.preventDefault();recordAnswer('stationary');}
+  else if(key==='n'&&!answered){e.preventDefault();recordAnswer('nonstationary');}
+  else if(key==='t'&&!answered){e.preventDefault();recordAnswer('trendstationary');}
+});
+
+// Boot
+updateScore();setSeed(null);generate(false);
+</script>
+</body>
+</html>

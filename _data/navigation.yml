@@ -18,7 +18,10 @@ main:
 #    url: /talks/    
 
   - title: "Teaching"
-    url: /teaching/    
+    url: /teaching/
+
+  - title: "Time Series Tools"
+    url: /time-series-tools/
 
   - title: "CV"
     url: /files/cornwall_cv.pdf

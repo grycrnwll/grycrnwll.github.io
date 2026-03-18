@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Release Date Radar</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --bg: #1a1a2e;
+  --fg: #e0e0e0;
+  --muted: #8888aa;
+  --accent: #e94560;
+  --accent2: #f5c518;
+  --panel: #16213e;
+  --grid: #2a2a4a;
+  --ok: #00c853;
+  --bad: #ff1744;
+  --border: #2a2a4a;
+  --input-bg: #0f3460;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--grid); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ── Loading overlay ── */
+#loading-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(26, 26, 46, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+#loading-overlay .spinner {
+  display: inline-block;
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--grid);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+#loading-overlay .error-box {
+  background: #3d1f1f;
+  border: 1px solid #f85149;
+  color: #f85149;
+  padding: 1.5rem 2rem;
+  border-radius: 8px;
+  max-width: 500px;
+  text-align: center;
+}
+
+#loading-overlay .error-box p {
+  margin-bottom: 1rem;
+  font-size: 16px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 32px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.header-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: 0.5px;
+}
+
+.header-counter {
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 3px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.header-subtitle {
+  color: var(--muted);
+  font-size: 15px;
+  margin-left: auto;
+}
+
+/* ── Main layout ── */
+.main-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 400px 1fr 360px;
+  gap: 24px;
+  padding: 24px 32px;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ── Panels ── */
+.panel-left,
+.panel-center,
+.panel-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Card mixin ── */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+
+/* ── Poster ── */
+.poster-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.poster-placeholder {
+  width: 350px;
+  max-width: 100%;
+  height: 520px;
+  background: #2a2a3e;
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 500;
+  user-select: none;
+}
+
+.poster-img {
+  width: 350px;
+  max-width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
+  display: block;
+}
+
+/* ── Clues ── */
+.clue-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 16px;
+}
+
+.clue-row:last-child { border-bottom: none; }
+
+.clue-label {
+  font-weight: 600;
+  color: var(--fg);
+  min-width: 90px;
+}
+
+.clue-value {
+  color: var(--muted);
+  text-align: right;
+}
+
+/* ── Year input ── */
+#year-input {
+  width: 100%;
+  font-size: 24px;
+  padding: 12px 16px;
+  background: var(--input-bg);
+  color: var(--fg);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+  -moz-appearance: textfield;
+}
+
+#year-input::-webkit-outer-spin-button,
+#year-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#year-input:focus {
+  border-color: var(--accent2);
+}
+
+#year-input::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+#year-input:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── Guesses list ── */
+.guesses-container {
+  max-height: 150px;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-content: flex-start;
+}
+
+.guess-pill {
+  background: var(--input-bg);
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 4px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* ── Buttons ── */
+.btn-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn {
+  display: block;
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: opacity 0.2s, background 0.2s, color 0.2s, border-color 0.2s;
+  text-align: center;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: 2px solid var(--accent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: #d63352;
+  border-color: #d63352;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--accent);
+  border: 2px solid var(--accent);
+}
+
+.btn-outline:not(:disabled):hover {
+  background: rgba(233, 69, 96, 0.1);
+}
+
+.btn-subtle {
+  background: transparent;
+  color: var(--muted);
+  border: 2px solid var(--muted);
+}
+
+.btn-subtle:not(:disabled):hover {
+  border-color: var(--fg);
+  color: var(--fg);
+}
+
+/* ── Histogram ── */
+.histogram-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.chart-wrap {
+  flex: 1;
+  min-height: 350px;
+  position: relative;
+}
+
+#histogram-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── Stats ── */
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 18px;
+}
+
+.stat-row:last-child { border-bottom: none; }
+
+.stat-label {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.stat-value {
+  color: var(--fg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Reveal card ── */
+.reveal-section {
+  text-align: center;
+}
+
+.reveal-label {
+  color: var(--muted);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.reveal-date {
+  color: var(--accent2);
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.reveal-error {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.verdict-badge {
+  display: inline-block;
+  padding: 6px 24px;
+  border-radius: 24px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.verdict-great { background: var(--ok); }
+.verdict-good  { background: #2979ff; }
+.verdict-ok    { background: #ffc107; color: #1a1a2e; }
+.verdict-miss  { background: var(--bad); }
+
+/* ── Summary screen ── */
+#summary-screen {
+  display: none;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+#summary-screen.active {
+  display: flex;
+}
+
+.summary-title {
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+}
+
+.summary-table th {
+  text-align: left;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 1px;
+  padding: 12px 14px;
+  border-bottom: 2px solid var(--border);
+}
+
+.summary-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.summary-table tr:nth-child(even) td {
+  background: rgba(22, 33, 62, 0.5);
+}
+
+.summary-table .thumb {
+  height: 60px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.summary-total {
+  font-weight: 700;
+  font-size: 18px;
+  text-align: center;
+  padding: 16px;
+  border-top: 2px solid var(--accent);
+}
+
+.callout-row {
+  display: flex;
+  gap: 16px;
+}
+
+.callout-card {
+  flex: 1;
+  text-align: center;
+}
+
+.callout-card .callout-label {
+  font-size: 14px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.callout-card .callout-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.callout-best .callout-value { color: var(--ok); }
+.callout-worst .callout-value { color: var(--bad); }
+
+/* ── Footer ── */
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 32px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+
+.footer img { vertical-align: middle; }
+
+.footer a {
+  color: var(--accent2);
+  text-decoration: none;
+}
+
+.footer a:hover { text-decoration: underline; }
+
+.footer-sep {
+  color: var(--border);
+}
+
+/* ── Responsive ── */
+@media (max-width: 1100px) {
+  .main-content {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .poster-placeholder,
+  .poster-img {
+    width: 280px;
+    height: auto;
+  }
+
+  .poster-placeholder {
+    height: 420px;
+  }
+
+  .header {
+    padding: 14px 16px;
+  }
+
+  .footer {
+    padding: 14px 16px;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════ LOADING OVERLAY ════════ -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <p style="color:#e0e0e0; font-size:18px;">Fetching movies from TMDb...</p>
+</div>
+
+<!-- ════════ HEADER ════════ -->
+<header class="header">
+  <span class="header-title">Release Date Radar</span>
+  <span class="header-counter" id="movie-counter">Movie 1 of 5</span>
+  <span class="header-subtitle">Forecast Combination Exercise</span>
+</header>
+
+<!-- ════════ MAIN 3-COLUMN LAYOUT ════════ -->
+<div class="main-content" id="game-screen">
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+
+    <!-- Poster -->
+    <div class="poster-wrap" id="poster-wrap">
+      <div class="poster-placeholder" id="poster-image">Movie Poster</div>
+    </div>
+
+    <!-- Clues -->
+    <div class="card" id="clues-container">
+      <div class="card-title">Clues</div>
+      <div id="clues-list"></div>
+    </div>
+
+    <!-- Year input -->
+    <input
+      type="number"
+      id="year-input"
+      placeholder="Enter year..."
+      min="1900"
+      max="2030"
+    >
+
+    <!-- Guesses list -->
+    <div class="guesses-container" id="guesses-list"></div>
+
+    <!-- Buttons -->
+    <div class="btn-stack">
+      <button class="btn btn-primary" id="reveal-btn" disabled>Reveal Answer</button>
+      <button class="btn btn-outline" id="next-btn" disabled>Next Movie</button>
+      <button class="btn btn-subtle" id="reset-btn">Reset Guesses</button>
+    </div>
+  </div>
+
+  <!-- CENTER PANEL -->
+  <div class="panel-center">
+    <div class="histogram-title">Distribution of Guesses</div>
+    <div class="chart-wrap">
+      <canvas id="histogram-canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+
+    <!-- Statistics -->
+    <div class="card">
+      <div class="card-title">Statistics</div>
+      <div class="stat-row">
+        <span class="stat-label">Guesses (n):</span>
+        <span class="stat-value" id="stat-count">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Mean Year:</span>
+        <span class="stat-value" id="stat-mean">--</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Variance:</span>
+        <span class="stat-value" id="stat-variance">--</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Est. Release Date:</span>
+        <span class="stat-value" id="stat-date">--</span>
+      </div>
+      <div class="stat-row" id="pi-row" style="display:none;">
+        <span class="stat-label">95% Prediction Interval:</span>
+        <span class="stat-value" id="stat-pi">--</span>
+      </div>
+    </div>
+
+    <!-- Reveal card -->
+    <div class="card reveal-section" id="reveal-card" style="display:none;">
+      <div class="reveal-label">Actual Release Date</div>
+      <div class="reveal-date" id="reveal-date">--</div>
+      <div class="reveal-label">Crowd Error</div>
+      <div class="reveal-error" id="reveal-error">--</div>
+      <span class="verdict-badge" id="reveal-verdict"></span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════ SUMMARY SCREEN ════════ -->
+<div id="summary-screen">
+  <div class="summary-title">Session Summary</div>
+
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Poster</th>
+          <th>Movie</th>
+          <th>Actual Year</th>
+          <th>Crowd Mean</th>
+          <th>Error</th>
+          <th>n</th>
+        </tr>
+      </thead>
+      <tbody id="summary-tbody"></tbody>
+    </table>
+    <div class="summary-total" id="summary-total"></div>
+  </div>
+
+  <div class="callout-row">
+    <div class="card callout-card callout-best">
+      <div class="callout-label">Best Guess</div>
+      <div class="callout-value" id="callout-best">--</div>
+    </div>
+    <div class="card callout-card callout-worst">
+      <div class="callout-label">Worst Guess</div>
+      <div class="callout-value" id="callout-worst">--</div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="new-session-btn" style="max-width:320px; margin:0 auto;">Start New Session</button>
+</div>
+
+<!-- ════════ FOOTER ════════ -->
+<footer class="footer">
+  <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">
+    <img src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg" alt="TMDb" height="20">
+  </a>
+  <span class="footer-sep">|</span>
+  <span>This product uses the TMDB API but is not endorsed or certified by TMDB.</span>
+  <span class="footer-sep">|</span>
+  <span>Built for ECON 6223: Applied Time Series Econometrics</span>
+</footer>
+
+<!-- ════════ JS ════════ -->
+<script>
+(function () {
+  'use strict';
+
+  // ─── Configuration ──────────────────────────────────────────────
+  const API_KEY      = '1b8c730722ce2c4b068e3d0fbff2959b';
+  const API_BASE     = 'https://api.themoviedb.org/3';
+  const IMG_BASE     = 'https://image.tmdb.org/t/p/w500';
+  const BTTF_ID      = 105;
+  const CURRENT_YEAR = 2026;
+
+  // ─── State ──────────────────────────────────────────────────────
+  let sessionMovies    = [];
+  let currentMovieIndex = 0;
+  let currentGuesses   = [];
+  let revealed         = false;
+  let currentMean      = null;
+  let actualYearLine   = null;   // set on reveal
+  let movieResults     = [];
+  let chart            = null;
+
+  // ─── DOM refs ───────────────────────────────────────────────────
+  const loadingOverlay  = document.getElementById('loading-overlay');
+  const movieCounter    = document.getElementById('movie-counter');
+  const posterWrap      = document.getElementById('poster-wrap');
+  const cluesList       = document.getElementById('clues-list');
+  const yearInput       = document.getElementById('year-input');
+  const guessesList     = document.getElementById('guesses-list');
+  const revealBtn       = document.getElementById('reveal-btn');
+  const nextBtn         = document.getElementById('next-btn');
+  const resetBtn        = document.getElementById('reset-btn');
+  const revealCard      = document.getElementById('reveal-card');
+  const revealDateEl    = document.getElementById('reveal-date');
+  const revealErrorEl   = document.getElementById('reveal-error');
+  const revealVerdictEl = document.getElementById('reveal-verdict');
+  const statCount       = document.getElementById('stat-count');
+  const statMean        = document.getElementById('stat-mean');
+  const statVariance    = document.getElementById('stat-variance');
+  const statDate        = document.getElementById('stat-date');
+  const statPi          = document.getElementById('stat-pi');
+  const piRow           = document.getElementById('pi-row');
+  const gameScreen      = document.getElementById('game-screen');
+  const summaryScreen   = document.getElementById('summary-screen');
+  const summaryTbody    = document.getElementById('summary-tbody');
+  const summaryTotal    = document.getElementById('summary-total');
+  const calloutBest     = document.getElementById('callout-best');
+  const calloutWorst    = document.getElementById('callout-worst');
+  const newSessionBtn   = document.getElementById('new-session-btn');
+
+  // ─── t-distribution lookup ──────────────────────────────────────
+  const T_TABLE = [
+    [4, 2.776], [5, 2.571], [6, 2.447], [7, 2.365], [8, 2.306],
+    [9, 2.262], [10, 2.228], [11, 2.201], [12, 2.179], [13, 2.160],
+    [14, 2.145], [15, 2.131], [20, 2.086], [25, 2.060], [30, 2.042],
+    [40, 2.021], [60, 2.000], [120, 1.980]
+  ];
+
+  function tCrit(df) {
+    if (df > 120) return 1.960;
+    for (let i = T_TABLE.length - 1; i >= 0; i--) {
+      if (df >= T_TABLE[i][0]) return T_TABLE[i][1];
+    }
+    return T_TABLE[0][1];
+  }
+
+  // ─── Helpers ────────────────────────────────────────────────────
+  function yearToDate(fractionalYear) {
+    const year = Math.floor(fractionalYear);
+    const fraction = fractionalYear - year;
+    const startOfYear = new Date(year, 0, 1);
+    const endOfYear = new Date(year + 1, 0, 1);
+    const msInYear = endOfYear - startOfYear;
+    return new Date(startOfYear.getTime() + fraction * msInYear);
+  }
+
+  function formatDate(date) {
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  function buildPosterUrl(posterPath) {
+    return `${IMG_BASE}${posterPath}`;
+  }
+
+  function pickRandom(arr, n, excludeIds = new Set()) {
+    const pool = arr.filter(m => !excludeIds.has(m.id));
+    const picks = [];
+    const used = new Set();
+    while (picks.length < n && picks.length < pool.length) {
+      const idx = Math.floor(Math.random() * pool.length);
+      if (!used.has(idx)) {
+        used.add(idx);
+        picks.push(pool[idx]);
+      }
+    }
+    return picks;
+  }
+
+  function containsYear(text) {
+    return /\b(19|20)\d{2}\b/.test(text);
+  }
+
+  // ─── TMDb Data Engine ──────────────────────────────────────────
+  async function fetchMoviesByEra(startYear, endYear, apiKey) {
+    const movies = [];
+    const seenIds = new Set();
+    for (let page = 1; page <= 5; page++) {
+      const url = `${API_BASE}/discover/movie?api_key=${apiKey}`
+        + `&sort_by=popularity.desc`
+        + `&primary_release_date.gte=${startYear}-01-01`
+        + `&primary_release_date.lte=${endYear}-12-31`
+        + `&vote_count.gte=500`
+        + `&page=${page}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`TMDb discover failed (page ${page}): ${resp.status}`);
+      const data = await resp.json();
+      for (const m of data.results) {
+        if (!seenIds.has(m.id)) {
+          seenIds.add(m.id);
+          movies.push({
+            id:           m.id,
+            title:        m.title,
+            release_date: m.release_date,
+            poster_path:  m.poster_path,
+            popularity:   m.popularity,
+          });
+        }
+      }
+      if (page >= data.total_pages) break;
+    }
+    return movies.slice(0, 100);
+  }
+
+  async function fetchMovieDetails(movieId, apiKey) {
+    const url = `${API_BASE}/movie/${movieId}?api_key=${apiKey}&append_to_response=credits`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`TMDb movie detail failed for id ${movieId}: ${resp.status}`);
+    const d = await resp.json();
+    const directorEntry = (d.credits?.crew || []).find(c => c.job === 'Director');
+    return {
+      id:           d.id,
+      title:        d.title,
+      release_date: d.release_date,
+      poster_path:  d.poster_path,
+      genres:       (d.genres || []).map(g => g.name).join(', '),
+      director:     directorEntry ? directorEntry.name : 'Unknown',
+      cast:         (d.credits?.cast || []).slice(0, 3).map(c => c.name),
+      tagline:      d.tagline || '',
+      runtime:      d.runtime,
+      overview:     d.overview || '',
+    };
+  }
+
+  function sanitizeClue(text) {
+    if (!text) return null;
+    let cleaned = text;
+    cleaned = cleaned.replace(/\b\d{1,3}(st|nd|rd|th)\s+\w*\s*(Awards?|Ceremony|Festival)/gi, '');
+    cleaned = cleaned.replace(/\b(in|of|during|from|the)\s+the\s+(19|20)?\d{2}s\b/gi, '');
+    cleaned = cleaned.replace(/\bthe\s+(19|20)?\d{2}s\b/gi, '');
+    cleaned = cleaned.replace(/\b(in|of|during|from)\s+the\s+'\d{2}s\b/gi, '');
+    cleaned = cleaned.replace(/\bthe\s+'\d{2}s\b/gi, '');
+    cleaned = cleaned.replace(/\b(19|20)\d{2}\b/g, '');
+    cleaned = cleaned.replace(/\s{2,}/g, ' ').trim();
+    cleaned = cleaned.replace(/^[,.\-;\s]+|[,.\-;\s]+$/g, '').trim();
+    if (!cleaned || cleaned.length < 3) return null;
+    return cleaned;
+  }
+
+  function buildClues(details) {
+    const clues = [];
+    if (details.genres) {
+      const v = sanitizeClue(details.genres);
+      if (v) clues.push({ label: 'Genre', value: v });
+    }
+    if (details.director) {
+      const v = sanitizeClue(details.director);
+      if (v) clues.push({ label: 'Director', value: v });
+    }
+    if (details.cast && details.cast.length > 0) {
+      const actors = details.cast.slice(0, 3).join(', ');
+      const v = sanitizeClue(actors);
+      if (v) clues.push({ label: 'Lead Actors', value: v });
+    }
+    if (details.tagline) {
+      const v = sanitizeClue(details.tagline);
+      if (v) clues.push({ label: 'Tagline', value: v });
+    }
+    if (details.runtime) {
+      clues.push({ label: 'Runtime', value: `${details.runtime} min` });
+    }
+    return clues;
+  }
+
+  async function selectSessionMovies(apiKey) {
+    const bttf = await fetchMovieDetails(BTTF_ID, apiKey);
+    const usedIds = new Set([BTTF_ID]);
+    const [pool70s, pool90s, poolModern] = await Promise.all([
+      fetchMoviesByEra(1970, 1990, apiKey),
+      fetchMoviesByEra(1990, 2010, apiKey),
+      fetchMoviesByEra(2011, CURRENT_YEAR, apiKey),
+    ]);
+    const [pick70s] = pickRandom(pool70s, 1, usedIds);
+    usedIds.add(pick70s.id);
+    const [pick90s] = pickRandom(pool90s, 1, usedIds);
+    usedIds.add(pick90s.id);
+    const modernPicks = pickRandom(poolModern, 2, usedIds);
+    modernPicks.forEach(m => usedIds.add(m.id));
+    const [details70s, details90s, detailsM1, detailsM2] = await Promise.all([
+      fetchMovieDetails(pick70s.id, apiKey),
+      fetchMovieDetails(pick90s.id, apiKey),
+      fetchMovieDetails(modernPicks[0].id, apiKey),
+      fetchMovieDetails(modernPicks[1].id, apiKey),
+    ]);
+    return [
+      { ...bttf,       era: 'Anchor (BttF)' },
+      { ...details70s, era: '1970-1990' },
+      { ...details90s, era: '1990-2010' },
+      { ...detailsM1,  era: '2011-Present' },
+      { ...detailsM2,  era: '2011-Present' },
+    ];
+  }
+
+  // ─── Chart.js setup ─────────────────────────────────────────────
+  const overlayLinesPlugin = {
+    id: 'overlayLines',
+    afterDraw(chartInstance) {
+      const xScale = chartInstance.scales.x;
+      const yScale = chartInstance.scales.y;
+      const ctx = chartInstance.ctx;
+      const labels = chartInstance.data.labels;
+
+      if (!labels || labels.length === 0) return;
+
+      // Helper: get pixel X for a fractional year value
+      function getPixelForYear(yearVal) {
+        // labels are integer years; find fractional index
+        const minLabel = labels[0];
+        const maxLabel = labels[labels.length - 1];
+        if (maxLabel === minLabel) return xScale.getPixelForValue(0);
+        const frac = (yearVal - minLabel) / (maxLabel - minLabel) * (labels.length - 1);
+        return xScale.getPixelForValue(frac);
+      }
+
+      const top = yScale.top;
+      const bottom = yScale.bottom;
+
+      // Draw mean line (dashed red)
+      if (currentMean !== null && labels.length > 0) {
+        const x = getPixelForYear(currentMean);
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = '#ff1744';
+        ctx.lineWidth = 2;
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, bottom);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#ff1744';
+        ctx.font = 'bold 12px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Mean', x, top - 6);
+        ctx.restore();
+      }
+
+      // Draw actual year line (solid green)
+      if (actualYearLine !== null && labels.length > 0) {
+        const x = getPixelForYear(actualYearLine);
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([]);
+        ctx.strokeStyle = '#00c853';
+        ctx.lineWidth = 2.5;
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, bottom);
+        ctx.stroke();
+        ctx.fillStyle = '#00c853';
+        ctx.font = 'bold 12px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Actual', x, top - 6);
+        ctx.restore();
+      }
+    }
+  };
+
+  function createChart() {
+    const ctx = document.getElementById('histogram-canvas').getContext('2d');
+    chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Guesses',
+          data: [],
+          backgroundColor: 'rgba(233, 69, 96, 0.75)',
+          borderColor: 'rgba(233, 69, 96, 1)',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 300 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#16213e',
+            titleColor: '#e0e0e0',
+            bodyColor: '#e0e0e0',
+            borderColor: '#2a2a4a',
+            borderWidth: 1
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(42, 42, 74, 0.5)' },
+            ticks: { color: '#8888aa', font: { size: 14 } },
+            title: { display: true, text: 'Year', color: '#8888aa', font: { size: 14 } }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(42, 42, 74, 0.5)' },
+            ticks: {
+              color: '#8888aa',
+              font: { size: 14 },
+              stepSize: 1
+            },
+            title: { display: true, text: 'Frequency', color: '#8888aa', font: { size: 14 } }
+          }
+        }
+      },
+      plugins: [overlayLinesPlugin]
+    });
+  }
+
+  // ─── Game logic ─────────────────────────────────────────────────
+  function showMovie(index) {
+    const movie = sessionMovies[index];
+    currentMovieIndex = index;
+    revealed = false;
+    currentGuesses = [];
+    currentMean = null;
+    actualYearLine = null;
+
+    // Header counter
+    movieCounter.textContent = `Movie ${index + 1} of 5`;
+
+    // Poster
+    if (movie.poster_path) {
+      posterWrap.innerHTML = `<img class="poster-img" src="${buildPosterUrl(movie.poster_path)}" alt="${movie.title}" onerror="this.outerHTML='<div class=\\'poster-placeholder\\'>Poster Unavailable</div>'">`;
+    } else {
+      posterWrap.innerHTML = '<div class="poster-placeholder">Poster Unavailable</div>';
+    }
+
+    // Clues
+    const clues = buildClues(movie);
+    cluesList.innerHTML = clues.map(c =>
+      `<div class="clue-row"><span class="clue-label">${c.label}</span><span class="clue-value">${c.value}</span></div>`
+    ).join('');
+
+    // Clear guesses
+    guessesList.innerHTML = '';
+
+    // Destroy and recreate chart
+    if (chart) { chart.destroy(); chart = null; }
+    createChart();
+
+    // Reset stats
+    statCount.textContent = '0';
+    statMean.textContent = '--';
+    statVariance.textContent = '--';
+    statDate.textContent = '--';
+    statPi.textContent = '--';
+    piRow.style.display = 'none';
+
+    // Hide reveal card
+    revealCard.style.display = 'none';
+
+    // Buttons
+    revealBtn.disabled = true;
+    nextBtn.disabled = true;
+    nextBtn.textContent = (index === 4) ? 'View Summary' : 'Next Movie';
+
+    // Input
+    yearInput.disabled = false;
+    yearInput.value = '';
+    yearInput.focus();
+  }
+
+  function updateHistogram() {
+    if (!chart) return;
+    if (currentGuesses.length === 0) {
+      chart.data.labels = [];
+      chart.data.datasets[0].data = [];
+      chart.update();
+      return;
+    }
+
+    // Frequency counts
+    const freq = {};
+    for (const y of currentGuesses) {
+      freq[y] = (freq[y] || 0) + 1;
+    }
+
+    let minY = Math.min(...currentGuesses);
+    let maxY = Math.max(...currentGuesses);
+
+    // Include actual year in range if revealed
+    if (revealed && actualYearLine !== null) {
+      minY = Math.min(minY, actualYearLine);
+      maxY = Math.max(maxY, actualYearLine);
+    }
+
+    const lo = minY - 2;
+    const hi = maxY + 2;
+
+    const labels = [];
+    const data = [];
+    for (let y = lo; y <= hi; y++) {
+      labels.push(y);
+      data.push(freq[y] || 0);
+    }
+
+    // Compute mean for the overlay plugin
+    const sum = currentGuesses.reduce((a, b) => a + b, 0);
+    currentMean = sum / currentGuesses.length;
+
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = data;
+    chart.update();
+  }
+
+  function updateStats() {
+    const n = currentGuesses.length;
+    statCount.textContent = n;
+
+    if (n === 0) {
+      statMean.textContent = '--';
+      statVariance.textContent = '--';
+      statDate.textContent = '--';
+      statPi.textContent = '--';
+      piRow.style.display = 'none';
+      return;
+    }
+
+    const sum = currentGuesses.reduce((a, b) => a + b, 0);
+    const mean = sum / n;
+    statMean.textContent = mean.toFixed(1);
+
+    // Estimated release date
+    const estDate = yearToDate(mean);
+    statDate.textContent = formatDate(estDate);
+
+    // Variance
+    if (n < 2) {
+      statVariance.textContent = '--';
+      statPi.textContent = '--';
+      piRow.style.display = 'none';
+      return;
+    }
+
+    const variance = currentGuesses.reduce((acc, y) => acc + (y - mean) ** 2, 0) / (n - 1);
+    statVariance.textContent = variance.toFixed(2);
+
+    // Prediction interval
+    if (n >= 5) {
+      piRow.style.display = '';
+      const s = Math.sqrt(variance);
+      const df = n - 1;
+      const tc = tCrit(df);
+      const halfWidth = tc * s * Math.sqrt(1 + 1 / n);
+      const lower = mean - halfWidth;
+      const upper = mean + halfWidth;
+      const lowerDate = yearToDate(lower);
+      const upperDate = yearToDate(upper);
+      statPi.textContent = `${formatDate(lowerDate)} \u2013 ${formatDate(upperDate)}`;
+    } else {
+      piRow.style.display = 'none';
+      statPi.textContent = '--';
+    }
+  }
+
+  function onYearInput() {
+    const val = yearInput.value.trim();
+    if (val.length === 4 && /^\d{4}$/.test(val)) {
+      const year = parseInt(val, 10);
+      if (year >= 1900 && year <= 2030) {
+        currentGuesses.push(year);
+        const pill = document.createElement('span');
+        pill.className = 'guess-pill';
+        pill.textContent = year;
+        guessesList.appendChild(pill);
+        yearInput.value = '';
+        updateHistogram();
+        updateStats();
+        if (!revealed) {
+          revealBtn.disabled = false;
+        }
+      }
+    }
+  }
+
+  function revealAnswer() {
+    if (revealed) return;
+    revealed = true;
+
+    const movie = sessionMovies[currentMovieIndex];
+    const parts = movie.release_date.split('-');
+    const actualDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    const actualFormatted = formatDate(actualDate);
+    const actualYear = parseInt(parts[0]);
+
+    // Show reveal card
+    revealCard.style.display = '';
+    revealDateEl.textContent = actualFormatted;
+
+    // Compute crowd error
+    const mean = currentGuesses.reduce((a, b) => a + b, 0) / currentGuesses.length;
+    const meanDate = yearToDate(mean);
+    const diffMs = Math.abs(meanDate.getTime() - actualDate.getTime());
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+    // Convert to years, months, days
+    const errYears = Math.floor(diffDays / 365.25);
+    const remainDays1 = diffDays - errYears * 365.25;
+    const errMonths = Math.floor(remainDays1 / 30.4375);
+    const errDaysRemainder = Math.round(remainDays1 - errMonths * 30.4375);
+
+    let errorParts = [];
+    if (errYears > 0) errorParts.push(`${errYears} year${errYears !== 1 ? 's' : ''}`);
+    if (errMonths > 0) errorParts.push(`${errMonths} month${errMonths !== 1 ? 's' : ''}`);
+    if (errDaysRemainder > 0 || errorParts.length === 0) errorParts.push(`${errDaysRemainder} day${errDaysRemainder !== 1 ? 's' : ''}`);
+    const errorText = errorParts.join(', ');
+    revealErrorEl.textContent = errorText;
+
+    // Verdict
+    let verdictClass, verdictText;
+    if (diffDays < 182) {
+      verdictClass = 'verdict-great';
+      verdictText = 'Remarkably close!';
+    } else if (diffDays < 730) {
+      verdictClass = 'verdict-good';
+      verdictText = 'Good estimate!';
+    } else if (diffDays < 1825) {
+      verdictClass = 'verdict-ok';
+      verdictText = 'Not bad!';
+    } else {
+      verdictClass = 'verdict-miss';
+      verdictText = 'The crowd missed this one!';
+    }
+    revealVerdictEl.className = `verdict-badge ${verdictClass}`;
+    revealVerdictEl.textContent = verdictText;
+
+    // Draw actual year line on histogram
+    // Use fractional year from actual date for precision
+    const startOfActualYear = new Date(actualYear, 0, 1);
+    const endOfActualYear = new Date(actualYear + 1, 0, 1);
+    const fractionOfYear = (actualDate - startOfActualYear) / (endOfActualYear - startOfActualYear);
+    actualYearLine = actualYear + fractionOfYear;
+    updateHistogram();
+
+    // Disable input
+    yearInput.disabled = true;
+
+    // Save result
+    const absError = diffDays / 365.25;
+    movieResults.push({
+      title: movie.title,
+      posterPath: movie.poster_path,
+      actualYear: actualYear,
+      actualDate: actualFormatted,
+      crowdMean: mean,
+      error: absError,
+      errorText: errorText,
+      n: currentGuesses.length,
+      verdict: verdictText
+    });
+
+    // Enable next
+    nextBtn.disabled = false;
+  }
+
+  function nextMovie() {
+    if (currentMovieIndex < 4) {
+      showMovie(currentMovieIndex + 1);
+    } else {
+      showSummary();
+    }
+  }
+
+  function resetCurrent() {
+    currentGuesses = [];
+    currentMean = null;
+    actualYearLine = null;
+    revealed = false;
+
+    guessesList.innerHTML = '';
+
+    if (chart) {
+      chart.data.labels = [];
+      chart.data.datasets[0].data = [];
+      chart.update();
+    }
+
+    statCount.textContent = '0';
+    statMean.textContent = '--';
+    statVariance.textContent = '--';
+    statDate.textContent = '--';
+    statPi.textContent = '--';
+    piRow.style.display = 'none';
+    revealCard.style.display = 'none';
+    revealBtn.disabled = true;
+    nextBtn.disabled = true;
+    yearInput.disabled = false;
+    yearInput.value = '';
+    yearInput.focus();
+
+    // Remove saved result for this movie if it exists (re-playing after reveal)
+    // Only remove if the last result matches the current movie index
+    if (movieResults.length > currentMovieIndex) {
+      movieResults.length = currentMovieIndex;
+    }
+  }
+
+  function showSummary() {
+    gameScreen.style.display = 'none';
+    document.querySelector('.header').style.display = 'none';
+    summaryScreen.classList.add('active');
+
+    summaryTbody.innerHTML = '';
+    let totalError = 0;
+    let bestIdx = 0, worstIdx = 0;
+
+    for (let i = 0; i < movieResults.length; i++) {
+      const r = movieResults[i];
+      totalError += r.error;
+      if (r.error < movieResults[bestIdx].error) bestIdx = i;
+      if (r.error > movieResults[worstIdx].error) worstIdx = i;
+
+      const posterHtml = r.posterPath
+        ? `<img class="thumb" src="${buildPosterUrl(r.posterPath)}" alt="${r.title}">`
+        : '<span class="thumb" style="background:#2a2a3e;"></span>';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${posterHtml}</td>
+        <td>${r.title}</td>
+        <td>${r.actualYear}</td>
+        <td>${r.crowdMean.toFixed(1)}</td>
+        <td>${r.errorText}</td>
+        <td>${r.n}</td>
+      `;
+      summaryTbody.appendChild(tr);
+    }
+
+    const avgError = totalError / movieResults.length;
+    const avgYears = Math.floor(avgError);
+    const avgMonths = Math.round((avgError - avgYears) * 12);
+    let avgText;
+    if (avgYears > 0 && avgMonths > 0) {
+      avgText = `${avgYears} year${avgYears !== 1 ? 's' : ''}, ${avgMonths} month${avgMonths !== 1 ? 's' : ''}`;
+    } else if (avgYears > 0) {
+      avgText = `${avgYears} year${avgYears !== 1 ? 's' : ''}`;
+    } else {
+      avgText = `${avgMonths} month${avgMonths !== 1 ? 's' : ''}`;
+    }
+    summaryTotal.textContent = `Average Error: ${avgText} (${avgError.toFixed(1)} years)`;
+
+    const best = movieResults[bestIdx];
+    const worst = movieResults[worstIdx];
+    calloutBest.textContent = `${best.title} (${best.errorText})`;
+    calloutWorst.textContent = `${worst.title} (${worst.errorText})`;
+  }
+
+  // ─── Event wiring ───────────────────────────────────────────────
+  yearInput.addEventListener('input', onYearInput);
+  revealBtn.addEventListener('click', revealAnswer);
+  nextBtn.addEventListener('click', nextMovie);
+  resetBtn.addEventListener('click', resetCurrent);
+  newSessionBtn.addEventListener('click', function () {
+    location.reload();
+  });
+
+  // ─── Keyboard shortcuts ─────────────────────────────────────────
+  document.addEventListener('keydown', function (e) {
+    const active = document.activeElement;
+    const inputFocused = (active === yearInput);
+
+    // Any digit key: auto-focus year input
+    if (/^\d$/.test(e.key) && !inputFocused && !yearInput.disabled) {
+      yearInput.focus();
+      // Don't prevent default; let the digit go into the input
+      return;
+    }
+
+    // Backspace when input is empty: remove last guess
+    if (e.key === 'Backspace' && inputFocused && yearInput.value === '' && currentGuesses.length > 0) {
+      e.preventDefault();
+      currentGuesses.pop();
+      // Remove last pill
+      if (guessesList.lastChild) {
+        guessesList.removeChild(guessesList.lastChild);
+      }
+      if (currentGuesses.length === 0) {
+        currentMean = null;
+      }
+      updateHistogram();
+      updateStats();
+      if (currentGuesses.length === 0 && !revealed) {
+        revealBtn.disabled = true;
+      }
+      return;
+    }
+
+    // r/R: trigger reveal
+    if ((e.key === 'r' || e.key === 'R') && !inputFocused && !revealBtn.disabled) {
+      e.preventDefault();
+      revealAnswer();
+      return;
+    }
+
+    // n/N: trigger next
+    if ((e.key === 'n' || e.key === 'N') && !inputFocused && !nextBtn.disabled) {
+      e.preventDefault();
+      nextMovie();
+      return;
+    }
+  });
+
+  // ─── Init ───────────────────────────────────────────────────────
+  async function initApp() {
+    loadingOverlay.style.display = 'flex';
+    loadingOverlay.innerHTML = '<div class="spinner"></div><p style="color:#e0e0e0; font-size:18px;">Fetching movies from TMDb...</p>';
+
+    try {
+      sessionMovies = await selectSessionMovies(API_KEY);
+      loadingOverlay.style.display = 'none';
+      showMovie(0);
+    } catch (err) {
+      console.error(err);
+      loadingOverlay.innerHTML = `
+        <div class="error-box">
+          <p>Failed to load movies: ${err.message}</p>
+          <button class="btn btn-primary" id="retry-btn" style="display:inline-block; width:auto;">Retry</button>
+        </div>
+      `;
+      document.getElementById('retry-btn').addEventListener('click', initApp);
+    }
+  }
+
+  initApp();
+
+})();
+</script>
+</body>
+</html>

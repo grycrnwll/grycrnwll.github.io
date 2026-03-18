@@ -1,0 +1,1657 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ACF/PACF Model Identification Trainer</title>
+  <style>
+    :root {
+      --bg: #ffffff; --fg: #111111; --muted: #666666; --accent: #1f77b4;
+      --ok: #2ca02c; --bad: #d62728; --panel: #f7f7f7; --grid: #e6e6e6;
+      --warn: #ff7f0e; --ambig: #f59e0b;
+    }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg); color: var(--fg); font-size: 14px;
+    }
+    header { border-bottom: 1px solid #ccc; padding: 12px 16px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+    h1 { font-size: 20px; margin: 0; font-weight: 600; }
+    .sub { color: var(--muted); font-size: 13px; }
+    main { display: grid; grid-template-columns: 320px 1fr 360px; gap: 12px; padding: 12px; min-height: 0; }
+    @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+    .card { background: var(--panel); border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
+    .controls label { display: block; font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .controls input[type="number"], .controls input[type="text"], .controls select {
+      width: 100%; padding: 5px 6px; border: 1px solid #bbb; border-radius: 6px; font-size: 13px;
+      background: #fff; color: var(--fg); box-sizing: border-box;
+    }
+    .controls .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    button { padding: 7px 10px; border: 1px solid #333; background: #fff; color: #111; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; }
+    button:hover { background: #f0f0f0; }
+    button:active { transform: scale(0.98); }
+    button.primary { background: var(--fg); color: #fff; }
+    button.primary:hover { background: #333; }
+    button.good { border-color: var(--ok); color: var(--ok); }
+    button.good:hover { background: #f0fff0; }
+    button.bad { border-color: var(--bad); color: var(--bad); }
+    button.bad:hover { background: #fff5f5; }
+    button:disabled { opacity: 0.4; cursor: default; }
+    .stack { display: flex; flex-direction: column; gap: 8px; }
+    .plot { background: #fff; border: 1px solid #bbb; border-radius: 6px; padding: 8px; }
+    .plot canvas { width: 100%; height: 220px; display: block; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .muted { color: var(--muted); }
+    .rowline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .score { font-weight: 700; }
+    details { background: #fff; border: 1px solid #bbb; border-radius: 6px; padding: 6px 8px; }
+    details summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+    .label { font-size: 12px; color: var(--muted); }
+    .kv { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 13px; }
+    .kv div { padding: 2px 0; border-bottom: 1px dotted #eee; }
+    .pill { display: inline-block; padding: 3px 8px; border: 1px solid #bbb; border-radius: 999px; font-size: 12px; background: #fff; }
+    .pill.correct { border-color: var(--ok); color: var(--ok); background: #f0fff0; }
+    .pill.incorrect { border-color: var(--bad); color: var(--bad); background: #fff5f5; }
+    .footer { font-size: 11px; color: var(--muted); padding: 8px 16px 16px; }
+    .streak-badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; font-weight: 700; }
+    .streak-badge.hot { background: #fff3e0; color: #e65100; border: 1px solid #ffb74d; }
+    .streak-badge.cold { background: #e8eaf6; color: #283593; border: 1px solid #9fa8da; }
+    kbd { background: #eee; border: 1px solid #ccc; border-radius: 3px; padding: 1px 5px; font-size: 11px; font-family: inherit; }
+
+    /* Difficulty bar */
+    .difficulty-bar { display: flex; gap: 4px; }
+    .difficulty-bar button { flex: 1; font-size: 12px; padding: 5px 4px; }
+    .difficulty-bar button.active { background: var(--fg); color: #fff; border-color: var(--fg); }
+
+    /* Mode toggle — same layout as difficulty bar */
+    .mode-toggle { display: flex; gap: 4px; }
+    .mode-toggle button { flex: 1; font-size: 12px; padding: 5px 4px; }
+    .mode-toggle button.active { background: var(--fg); color: #fff; border-color: var(--fg); }
+
+    /* Model class selector — three buttons in a row */
+    .model-selector { display: flex; gap: 4px; }
+    .model-selector button { flex: 1; font-size: 13px; padding: 7px 4px; border: 2px solid #bbb; }
+    .model-selector button.selected { background: var(--fg); color: #fff; border-color: var(--fg); }
+    .model-selector button:not(.selected):hover { background: #f0f0f0; }
+
+    /* Order inputs — grid with label + spinner pairs */
+    .order-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+    .order-inputs label { display: block; font-size: 12px; color: var(--muted); margin-top: 0; }
+    .order-inputs input[type="number"] {
+      width: 100%; padding: 5px 6px; border: 1px solid #bbb; border-radius: 6px; font-size: 13px;
+      background: #fff; color: var(--fg); box-sizing: border-box;
+    }
+    .order-inputs input[type="number"]:disabled {
+      background: #eee; color: #999; cursor: not-allowed;
+    }
+
+    /* IC toggle — small two-button toggle */
+    .ic-toggle { display: flex; gap: 0; border: 1px solid #bbb; border-radius: 6px; overflow: hidden; }
+    .ic-toggle button { border: none; border-radius: 0; border-right: 1px solid #bbb; padding: 4px 14px; font-size: 12px; font-weight: 600; background: #fff; color: var(--fg); cursor: pointer; }
+    .ic-toggle button:last-child { border-right: none; }
+    .ic-toggle button:hover { background: #f5f5f5; }
+    .ic-toggle button.active { background: var(--fg); color: #fff; }
+
+    /* IC comparison table */
+    .ic-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+    .ic-table th { font-size: 11px; color: var(--muted); font-weight: 600; text-align: center; padding: 4px 6px; border-bottom: 2px solid #ddd; }
+    .ic-table th:first-child { text-align: left; }
+    .ic-table td { padding: 5px 6px; border-bottom: 1px solid #eee; text-align: center; font-size: 12px; }
+    .ic-table td:first-child { text-align: left; font-weight: 600; }
+    .ic-table tr.better td { background: #f0fff0; }
+
+    /* Evidence checklist table */
+    .evidence-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .evidence-table th { font-size: 10px; color: var(--muted); font-weight: 600; text-align: center; padding: 2px 4px; }
+    .evidence-table td { padding: 3px 4px; border-bottom: 1px solid #eee; }
+    .evidence-table td:first-child { font-size: 12px; }
+    .evidence-table td:not(:first-child) { text-align: center; }
+    .evidence-radio { appearance: none; -webkit-appearance: none; width: 16px; height: 16px; border: 2px solid #bbb; border-radius: 50%; cursor: pointer; margin: 0; vertical-align: middle; position: relative; }
+    .evidence-radio:checked { border-color: var(--accent); }
+    .evidence-radio:checked::after { content: ""; position: absolute; top: 3px; left: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+    .evidence-radio:disabled { cursor: default; opacity: 0.6; }
+    .evidence-result { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 4px; vertical-align: middle; }
+    .evidence-result.ev-correct { background: var(--ok); }
+    .evidence-result.ev-incorrect { background: var(--bad); }
+    .evidence-result.ev-ambiguous { background: var(--ambig); }
+
+    /* Scorecard */
+    .scorecard { font-size: 12px; padding: 8px; background: #fff; border: 1px solid #ddd; border-radius: 6px; line-height: 1.5; }
+    .scorecard .sc-title { font-weight: 700; margin-bottom: 4px; }
+
+    /* Theoretical overlay note */
+    .theoretical-overlay-note { font-size: 11px; color: var(--muted); padding: 4px 8px; background: #fff8f0; border: 1px solid #ffe0b2; border-radius: 4px; margin-top: 4px; }
+
+    /* Plots stacked vertically for center column */
+    .plots-stack { display: flex; flex-direction: column; gap: 10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ACF/PACF Model Identification Trainer</h1>
+    <div class="sub">Practice identifying ARMA model structure from sample correlograms</div>
+    <div class="sub" style="margin-left:auto;">Keyboard: <kbd>G</kbd> generate <kbd>1</kbd> AR <kbd>2</kbd> MA <kbd>3</kbd> ARMA <kbd>Enter</kbd> submit</div>
+  </header>
+  <main>
+    <!-- Left: Controls -->
+    <section class="card controls">
+      <div class="stack">
+        <!-- Difficulty -->
+        <div>
+          <div class="label" style="margin-bottom:4px;">Difficulty</div>
+          <div class="difficulty-bar">
+            <button id="diff-beginner">Beginner</button>
+            <button id="diff-intermediate" class="active">Intermediate</button>
+            <button id="diff-advanced">Advanced</button>
+          </div>
+        </div>
+
+        <!-- Generate / Re-run -->
+        <div class="rowline">
+          <button id="btn-generate" class="primary">Generate series</button>
+          <button id="btn-same" title="Regenerate with same DGP">Re-run same</button>
+        </div>
+
+        <!-- Mode toggle -->
+        <div>
+          <div class="label" style="margin-bottom:4px;">Mode</div>
+          <div class="mode-toggle">
+            <button id="mode-easy" class="active">Easy</button>
+            <button id="mode-hard">Hard</button>
+          </div>
+        </div>
+
+        <!-- Evidence checklist -->
+        <div>
+          <div class="label" style="margin-bottom:4px;">Evidence checklist (Lectures 3-6)</div>
+          <table class="evidence-table">
+            <thead>
+              <tr>
+                <th style="text-align:left;">Evidence</th>
+                <th colspan="3">Options</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-ev="decay">
+                <td>Which decays slower?</td>
+                <td><label style="display:inline;font-size:11px;color:var(--fg);margin:0;"><input type="radio" name="ev-decay" value="ACF" class="evidence-radio"> ACF</label></td>
+                <td><label style="display:inline;font-size:11px;color:var(--fg);margin:0;"><input type="radio" name="ev-decay" value="PACF" class="evidence-radio"> PACF</label></td>
+                <td><label style="display:inline;font-size:11px;color:var(--fg);margin:0;"><input type="radio" name="ev-decay" value="Ambiguous" class="evidence-radio"> Ambig.</label></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Model class selector -->
+        <div>
+          <div class="label" style="margin-bottom:4px;">Model class</div>
+          <div class="model-selector">
+            <button id="model-ar" data-model="AR">AR <kbd>1</kbd></button>
+            <button id="model-ma" data-model="MA">MA <kbd>2</kbd></button>
+            <button id="model-arma" data-model="ARMA">ARMA <kbd>3</kbd></button>
+          </div>
+        </div>
+
+        <!-- Order inputs (Hard mode only) -->
+        <div id="order-inputs-section" style="display:none;">
+          <div class="label" style="margin-bottom:4px;">Lag orders</div>
+          <div class="order-inputs">
+            <label>p (AR order):
+              <input type="number" id="inp-p" min="0" max="5" step="1" value="1" />
+            </label>
+            <label>q (MA order):
+              <input type="number" id="inp-q" min="0" max="5" step="1" value="1" />
+            </label>
+          </div>
+        </div>
+
+        <!-- IC selector -->
+        <div>
+          <div class="label" style="margin-bottom:4px;">Information criterion</div>
+          <div class="ic-toggle">
+            <button id="ic-aic" class="active">AIC</button>
+            <button id="ic-bic">BIC</button>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button id="btn-submit" class="primary" style="margin-top:4px;">Submit answer</button>
+
+        <!-- Session score -->
+        <div>
+          <span class="label">Session:</span>
+          <div class="rowline">
+            <span class="score" id="score">0 / 0 (--)</span>
+            <span id="streak-display"></span>
+          </div>
+        </div>
+
+        <!-- Advanced options -->
+        <details>
+          <summary>Advanced options</summary>
+          <div class="row">
+            <label>p(AR) probability
+              <input type="number" id="inp-par" min="0" max="1" step="0.05" value="0.40" />
+            </label>
+            <label>p(MA) probability
+              <input type="number" id="inp-pma" min="0" max="1" step="0.05" value="0.40" />
+            </label>
+          </div>
+          <div class="row">
+            <label>p(ARMA) probability
+              <input type="number" id="inp-parma" min="0" max="1" step="0.05" value="0.20" />
+            </label>
+            <label>Seed (optional)
+              <input type="text" id="inp-seed" placeholder="auto" />
+            </label>
+          </div>
+          <div class="row" style="margin-top:6px;">
+            <label>Min T
+              <input type="number" id="inp-tmin" min="20" max="300" step="10" value="80" />
+            </label>
+            <label>Max T
+              <input type="number" id="inp-tmax" min="40" max="500" step="10" value="200" />
+            </label>
+          </div>
+          <div class="row" style="margin-top:6px;">
+            <label>Max total params (p+q)
+              <input type="number" id="inp-maxparams" min="1" max="5" step="1" value="3" />
+            </label>
+          </div>
+        </details>
+
+        <!-- Reset / Download -->
+        <div class="rowline" style="margin-top:4px;">
+          <button id="btn-reset" style="font-size:12px;">Reset session</button>
+          <button id="btn-download" style="font-size:12px;">Download CSV</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Center: Plots -->
+    <section class="card">
+      <div class="plots-stack">
+        <div class="plot">
+          <div class="label" id="lbl-ts">Time series y<sub>t</sub></div>
+          <canvas id="plot-ts" width="600" height="220"></canvas>
+        </div>
+        <div class="plot">
+          <div class="label" id="lbl-acf">Sample ACF</div>
+          <canvas id="plot-acf" width="600" height="220"></canvas>
+        </div>
+        <div class="plot">
+          <div class="label" id="lbl-pacf">Sample PACF</div>
+          <canvas id="plot-pacf" width="600" height="220"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right: Diagnostics / Reveal -->
+    <section class="card">
+      <div class="stack">
+        <!-- IC comparison -->
+        <div>
+          <div class="label">Information criterion comparison <span id="ic-active-label" class="mono" style="font-size:11px;">(AIC)</span></div>
+          <table class="ic-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>IC value</th>
+                <th># params</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr id="ic-row-student">
+                <td>Your model</td>
+                <td class="mono" id="ic-val-student">&mdash;</td>
+                <td class="mono" id="ic-params-student">&mdash;</td>
+              </tr>
+              <tr id="ic-row-true">
+                <td>True DGP</td>
+                <td class="mono" id="ic-val-true">&mdash;</td>
+                <td class="mono" id="ic-params-true">&mdash;</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Truth -->
+        <div>
+          <div class="label">Truth (revealed after answer)</div>
+          <div id="truth" class="mono" style="font-size:12px;">(answer to reveal)</div>
+        </div>
+
+        <!-- Theoretical overlay note (hidden until reveal) -->
+        <div id="overlay-note" class="theoretical-overlay-note" style="display:none;">
+          Theoretical ACF/PACF shown in red
+        </div>
+
+        <!-- Evidence walkthrough (hidden until reveal) -->
+        <div id="walkthrough-box" style="display:none;">
+          <div class="label">Evidence walkthrough</div>
+          <div id="walkthrough" style="font-size:12px; line-height:1.5;"></div>
+        </div>
+
+        <!-- Scorecard (hidden until reveal) -->
+        <div id="scorecard-box" style="display:none;"></div>
+      </div>
+    </section>
+  </main>
+  <div class="footer">
+    All computation runs client-side. Lectures 3-6: Box-Jenkins model identification.
+  </div>
+
+<script>
+"use strict";
+
+/* ================================================================
+   MATH ENGINE — copied verbatim from test-acf-pacf-engine.html
+   ================================================================ */
+
+/* ===== PRNG ===== */
+function mulberry32(a){return function(){var t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
+function hashString(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=(h<<13)|(h>>>19);}return(h>>>0);}
+let rng=mulberry32(123456789);
+function setSeed(seedStr){rng=seedStr?mulberry32(hashString(seedStr)):mulberry32((Math.random()*1e9)|0);}
+function rnorm(){let u=0,v=0;while(u===0)u=rng();while(v===0)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+/* ===== Basic stats ===== */
+function mean(a){let s=0;for(const x of a)s+=x;return s/a.length;}
+function variance(a){const m=mean(a);let s=0;for(const x of a){const d=x-m;s+=d*d;}return s/(a.length-1);}
+function sd(a){return Math.sqrt(variance(a));}
+function diff(a){const d=[];for(let i=1;i<a.length;i++)d.push(a[i]-a[i-1]);return d;}
+function acf(x,maxLag){const n=x.length,mx=mean(x);let ac=new Array(maxLag+1).fill(0),den=0;for(let t=0;t<n;t++){const d=x[t]-mx;den+=d*d;}for(let k=0;k<=maxLag;k++){let num=0;for(let t=k;t<n;t++){num+=(x[t]-mx)*(x[t-k]-mx);}ac[k]=num/den;}return ac;}
+function pacf(x,maxLag){const r=acf(x,maxLag);const phi=Array.from({length:maxLag+1},()=>Array(maxLag+1).fill(0));const sigma=Array(maxLag+1).fill(0);sigma[0]=r[0];if(sigma[0]===0)return Array(maxLag+1).fill(0);for(let k=1;k<=maxLag;k++){let sum=0;for(let j=1;j<k;j++)sum+=phi[k-1][j]*r[k-j];const phikk=(r[k]-sum)/sigma[k-1];phi[k][k]=phikk;for(let j=1;j<k;j++)phi[k][j]=phi[k-1][j]-phikk*phi[k-1][k-j];sigma[k]=sigma[k-1]*(1-phikk*phikk);}const out=new Array(maxLag+1).fill(0);out[0]=1;for(let k=1;k<=maxLag;k++)out[k]=phi[k][k];return out;}
+
+/* ===== OLS ===== */
+function OLS(X,y){
+  const n=y.length,k=X[0].length;
+  const XtX=Array.from({length:k},()=>Array(k).fill(0));
+  const Xty=Array(k).fill(0);
+  for(let i=0;i<n;i++){const xi=X[i],yi=y[i];for(let a=0;a<k;a++){Xty[a]+=xi[a]*yi;for(let b=0;b<k;b++)XtX[a][b]+=xi[a]*xi[b];}}
+  const A=XtX.map((r,i)=>{const row=r.slice();for(let j=0;j<k;j++)row.push(i===j?1:0);return row;});
+  const width=2*k;
+  for(let i=0;i<k;i++){
+    let m=i;for(let r=i+1;r<k;r++){if(Math.abs(A[r][i])>Math.abs(A[m][i]))m=r;}
+    if(Math.abs(A[m][i])<1e-12)return{beta:Array(k).fill(NaN),resid:Array(n).fill(NaN),s2:NaN,vcov:null};
+    if(m!==i){const tmp=A[i];A[i]=A[m];A[m]=tmp;}
+    const piv=A[i][i];for(let c=0;c<width;c++)A[i][c]/=piv;
+    for(let r=0;r<k;r++)if(r!==i){const f=A[r][i];for(let c=0;c<width;c++)A[r][c]-=f*A[i][c];}
+  }
+  const XtXinv=A.map(row=>row.slice(k,width));
+  const beta=new Array(k).fill(0);
+  for(let i=0;i<k;i++)for(let j=0;j<k;j++)beta[i]+=XtXinv[i][j]*Xty[j];
+  const resid=new Array(n).fill(0);for(let i=0;i<n;i++){let fit=0;for(let j=0;j<k;j++)fit+=X[i][j]*beta[j];resid[i]=y[i]-fit;}
+  const s2=resid.reduce((a,c)=>a+c*c,0)/(n-k);
+  const vcov=XtXinv.map(row=>row.map(v=>v*s2));
+  return{beta,resid,s2,vcov};
+}
+
+/* ===== Root helpers ===== */
+function rootsOutsideUnitCircle(coeffs){
+  const p=coeffs.length-1;if(p===0)return true;
+  const a=coeffs.slice();let z=[];
+  for(let k=0;k<p;k++){const ang=2*Math.PI*(k+1)/p;z.push({re:Math.cos(ang),im:Math.sin(ang)});}
+  function evalPoly(zc){let re=0,im=0,zr=1,zi=0;for(let i=0;i<=p;i++){re+=a[i]*zr;im+=a[i]*zi;const nzr=zr*zc.re-zi*zc.im;const nzi=zr*zc.im+zi*zc.re;zr=nzr;zi=nzi;}return{re,im};}
+  for(let it=0;it<40;it++)for(let i=0;i<p;i++){
+    let num=evalPoly(z[i]);let denom={re:1,im:0};
+    for(let j=0;j<p;j++)if(j!==i){const dr=z[i].re-z[j].re,di=z[i].im-z[j].im;const tr=denom.re*dr-denom.im*di;const ti=denom.re*di+denom.im*dr;denom={re:tr,im:ti};}
+    const den2=denom.re*denom.re+denom.im*denom.im;const qr=(num.re*denom.re+num.im*denom.im)/den2;const qi=(num.im*denom.re-num.re*denom.im)/den2;
+    z[i]={re:z[i].re-qr,im:z[i].im-qi};
+  }
+  return z.every(r=>Math.hypot(r.re,r.im)>1+1e-6);
+}
+function makePolyFromRoots(roots){
+  let coeffs=[1];
+  for(const r of roots){
+    const denom=r.re*r.re+r.im*r.im;const c_re=r.re/denom;const c_im=-r.im/denom;
+    const next=new Array(coeffs.length+1).fill(0).map(()=>({re:0,im:0}));
+    for(let k=0;k<coeffs.length;k++){
+      const a_re=(typeof coeffs[k]==='number')?coeffs[k]:coeffs[k].re;
+      const a_im=(typeof coeffs[k]==='number')?0:coeffs[k].im;
+      next[k].re+=a_re;next[k].im+=a_im;
+      next[k+1].re+=-(a_re*c_re-a_im*c_im);
+      next[k+1].im+=-(a_re*c_im+a_im*c_re);
+    }
+    coeffs=next.map(z=>(Math.abs(z.im)<1e-10?z.re:z));
+  }
+  return coeffs.map(v=>(typeof v==='number'?v:v.re));
+}
+
+/* ===== AR/MA generation ===== */
+function drawStableAR(p){
+  if(p===0)return[];let tries=0;
+  while(tries++<500){const phi=[];for(let i=0;i<p;i++)phi.push(rnorm()*0.4);const coeffs=new Array(p+1).fill(0);coeffs[0]=1;for(let i=1;i<=p;i++)coeffs[i]=-phi[i-1];if(rootsOutsideUnitCircle(coeffs))return phi;}
+  return Array.from({length:p},()=>(rng()<0.5?-1:1)*0.2*rng());
+}
+function drawInvertibleMA(q){
+  if(q===0)return[];let tries=0;
+  while(tries++<500){const th=[];for(let i=0;i<q;i++)th.push(rnorm()*0.4);const coeffs=new Array(q+1).fill(0);for(let i=0;i<=q;i++)coeffs[i]=(i===0?1:th[i-1]);if(rootsOutsideUnitCircle(coeffs))return th;}
+  return Array.from({length:q},()=>(rng()<0.5?-1:1)*0.2*rng());
+}
+
+function drawStableAR_ranged(p, lo, hi) {
+  if (p === 0) return [];
+  let tries = 0;
+  while (tries++ < 500) {
+    const phi = [];
+    for (let i = 0; i < p; i++) {
+      const sign = rng() < 0.5 ? -1 : 1;
+      phi.push(sign * (lo + rng() * (hi - lo)));
+    }
+    const coeffs = new Array(p + 1).fill(0);
+    coeffs[0] = 1;
+    for (let i = 1; i <= p; i++) coeffs[i] = -phi[i - 1];
+    if (rootsOutsideUnitCircle(coeffs)) return phi;
+  }
+  return drawStableAR(p);
+}
+
+function drawInvertibleMA_ranged(q, lo, hi) {
+  if (q === 0) return [];
+  let tries = 0;
+  while (tries++ < 500) {
+    const th = [];
+    for (let i = 0; i < q; i++) {
+      const sign = rng() < 0.5 ? -1 : 1;
+      th.push(sign * (lo + rng() * (hi - lo)));
+    }
+    const coeffs = new Array(q + 1).fill(0);
+    for (let i = 0; i <= q; i++) coeffs[i] = (i === 0 ? 1 : th[i - 1]);
+    if (rootsOutsideUnitCircle(coeffs)) return th;
+  }
+  return drawInvertibleMA(q);
+}
+
+/* ===== chooseDGP(difficulty) ===== */
+function chooseDGP(difficulty) {
+  let modelClass, p, q, T;
+  const roll = rng();
+
+  if (difficulty === 'beginner') {
+    if (roll < 0.5) {
+      modelClass = 'AR';
+      p = 1 + Math.floor(rng() * 2);
+      q = 0;
+    } else {
+      modelClass = 'MA';
+      p = 0;
+      q = 1 + Math.floor(rng() * 2);
+    }
+    T = 150 + Math.floor(rng() * 151);
+  } else if (difficulty === 'intermediate') {
+    if (roll < 0.35) {
+      modelClass = 'AR';
+      p = 1 + Math.floor(rng() * 3);
+      q = 0;
+    } else if (roll < 0.70) {
+      modelClass = 'MA';
+      p = 0;
+      q = 1 + Math.floor(rng() * 3);
+    } else {
+      modelClass = 'ARMA';
+      p = 1; q = 1;
+    }
+    T = 80 + Math.floor(rng() * 121);
+  } else {
+    if (roll < 0.30) {
+      modelClass = 'AR';
+      p = 1 + Math.floor(rng() * 4);
+      q = 0;
+    } else if (roll < 0.60) {
+      modelClass = 'MA';
+      p = 0;
+      q = 1 + Math.floor(rng() * 4);
+    } else {
+      modelClass = 'ARMA';
+      p = 1 + Math.floor(rng() * 3);
+      const qMax = Math.min(4, 5 - p);
+      q = 1 + Math.floor(rng() * qMax);
+    }
+    T = 40 + Math.floor(rng() * 81);
+  }
+
+  return { modelClass, p, q, T, difficulty };
+}
+
+/* ===== generateStationary(T, p, q, mu, difficulty) ===== */
+function generateStationary(T, p, q, mu, difficulty) {
+  let phi, theta;
+  const lo = difficulty === 'beginner' ? 0.3 : difficulty === 'intermediate' ? 0.2 : 0.1;
+  const hi = difficulty === 'beginner' ? 0.8 : difficulty === 'intermediate' ? 0.9 : 0.95;
+
+  phi = drawStableAR_ranged(p, lo, hi);
+  theta = drawInvertibleMA_ranged(q, lo, hi);
+
+  if (difficulty === 'advanced' && p > 0 && q > 0 && rng() < 0.2) {
+    theta[0] = phi[0] + (rng() - 0.5) * 0.1;
+    const coeffs = new Array(q + 1).fill(0);
+    for (let i = 0; i <= q; i++) coeffs[i] = (i === 0 ? 1 : theta[i - 1]);
+    if (!rootsOutsideUnitCircle(coeffs)) {
+      theta = drawInvertibleMA_ranged(q, lo, hi);
+    }
+  }
+
+  const burnin = 300;
+  const totalLen = T + burnin;
+  const e = Array.from({ length: totalLen }, () => rnorm());
+  const x = new Array(totalLen).fill(0);
+
+  for (let t = 0; t < totalLen; t++) {
+    let ar = 0;
+    for (let i = 1; i <= p; i++) if (t - i >= 0) ar += phi[i - 1] * x[t - i];
+    let ma = 0;
+    for (let j = 1; j <= q; j++) if (t - j >= 0) ma += theta[j - 1] * e[t - j];
+    x[t] = ar + e[t] + ma;
+  }
+
+  const y = x.slice(-T).map(v => v + mu);
+  return { y, phi, theta, mu };
+}
+
+/* ===== theoreticalACF(phi, theta, maxLag) ===== */
+function theoreticalACF(phi, theta, maxLag) {
+  const p = phi.length;
+  const q = theta.length;
+
+  if (p === 0 && q === 0) {
+    const acfVals = new Array(maxLag + 1).fill(0);
+    acfVals[0] = 1;
+    return acfVals;
+  }
+
+  if (p === 0) {
+    const th = [1, ...theta];
+    const gamma = new Array(maxLag + 1).fill(0);
+    for (let k = 0; k <= maxLag; k++) {
+      if (k > q) { gamma[k] = 0; continue; }
+      let s = 0;
+      for (let j = 0; j <= q - k; j++) s += th[j] * th[j + k];
+      gamma[k] = s;
+    }
+    const g0 = gamma[0];
+    return gamma.map(g => g / g0);
+  }
+
+  if (q === 0) {
+    const A = Array.from({ length: p }, () => Array(p).fill(0));
+    const b = new Array(p).fill(0);
+    for (let k = 1; k <= p; k++) {
+      A[k - 1][k - 1] = 1;
+      for (let i = 1; i <= p; i++) {
+        const lag = Math.abs(k - i);
+        if (lag === 0) {
+          b[k - 1] += phi[i - 1];
+        } else {
+          A[k - 1][lag - 1] -= phi[i - 1];
+        }
+      }
+    }
+    const aug = A.map((row, i) => [...row, b[i]]);
+    for (let i = 0; i < p; i++) {
+      let m = i;
+      for (let r = i + 1; r < p; r++) if (Math.abs(aug[r][i]) > Math.abs(aug[m][i])) m = r;
+      if (m !== i) { const tmp = aug[i]; aug[i] = aug[m]; aug[m] = tmp; }
+      const piv = aug[i][i];
+      if (Math.abs(piv) < 1e-14) break;
+      for (let c = 0; c <= p; c++) aug[i][c] /= piv;
+      for (let r = 0; r < p; r++) if (r !== i) {
+        const f = aug[r][i];
+        for (let c = 0; c <= p; c++) aug[r][c] -= f * aug[i][c];
+      }
+    }
+    const rho = new Array(maxLag + 1).fill(0);
+    rho[0] = 1;
+    for (let k = 1; k <= Math.min(p, maxLag); k++) rho[k] = aug[k - 1][p];
+    for (let k = p + 1; k <= maxLag; k++) {
+      let s = 0;
+      for (let i = 1; i <= p; i++) s += phi[i - 1] * rho[k - i];
+      rho[k] = s;
+    }
+    return rho;
+  }
+
+  // General ARMA(p,q)
+  const th = [1, ...theta];
+  const maxPsi = Math.max(q, maxLag + p) + 1;
+  const psi = new Array(maxPsi + 1).fill(0);
+  psi[0] = 1;
+  for (let j = 1; j <= maxPsi; j++) {
+    psi[j] = (j <= q ? theta[j - 1] : 0);
+    for (let i = 1; i <= Math.min(j, p); i++) psi[j] += phi[i - 1] * psi[j - i];
+  }
+
+  const M = p + 1;
+  const Amat = Array.from({ length: M }, () => Array(M).fill(0));
+  const bvec = new Array(M).fill(0);
+
+  for (let k = 0; k <= p; k++) {
+    Amat[k][k] += 1;
+    for (let i = 1; i <= p; i++) {
+      const lag = Math.abs(k - i);
+      if (lag <= p) {
+        Amat[k][lag] -= phi[i - 1];
+      }
+    }
+    let rhs = 0;
+    for (let j = k; j <= q; j++) rhs += th[j] * psi[j - k];
+    bvec[k] = rhs;
+  }
+
+  const augM = Amat.map((row, i) => [...row, bvec[i]]);
+  for (let i = 0; i < M; i++) {
+    let mx = i;
+    for (let r = i + 1; r < M; r++) if (Math.abs(augM[r][i]) > Math.abs(augM[mx][i])) mx = r;
+    if (mx !== i) { const tmp = augM[i]; augM[i] = augM[mx]; augM[mx] = tmp; }
+    const piv = augM[i][i];
+    if (Math.abs(piv) < 1e-14) break;
+    for (let c = 0; c <= M; c++) augM[i][c] /= piv;
+    for (let r = 0; r < M; r++) if (r !== i) {
+      const f = augM[r][i];
+      for (let c = 0; c <= M; c++) augM[r][c] -= f * augM[i][c];
+    }
+  }
+
+  const gammaArr = new Array(maxLag + 1).fill(0);
+  for (let k = 0; k <= Math.min(p, maxLag); k++) gammaArr[k] = augM[k][M];
+  for (let k = p + 1; k <= maxLag; k++) {
+    let s = 0;
+    for (let i = 1; i <= p; i++) s += phi[i - 1] * gammaArr[k - i];
+    if (k <= q) {
+      for (let j = k; j <= q; j++) s += th[j] * psi[j - k];
+    }
+    gammaArr[k] = s;
+  }
+
+  const g0 = gammaArr[0];
+  if (g0 === 0) return gammaArr;
+  return gammaArr.map(g => g / g0);
+}
+
+/* ===== theoreticalPACF(acfValues, maxLag) ===== */
+function theoreticalPACF(acfValues, maxLag) {
+  const phi = Array.from({ length: maxLag + 1 }, () => Array(maxLag + 1).fill(0));
+  const sigma = new Array(maxLag + 1).fill(0);
+  sigma[0] = 1;
+  const out = new Array(maxLag + 1).fill(0);
+  out[0] = 1;
+
+  for (let k = 1; k <= maxLag; k++) {
+    if (k >= acfValues.length) break;
+    let sum = 0;
+    for (let j = 1; j < k; j++) sum += phi[k - 1][j] * acfValues[k - j];
+    const phikk = (acfValues[k] - sum) / sigma[k - 1];
+    phi[k][k] = phikk;
+    for (let j = 1; j < k; j++) phi[k][j] = phi[k - 1][j] - phikk * phi[k - 1][k - j];
+    sigma[k] = sigma[k - 1] * (1 - phikk * phikk);
+    out[k] = phikk;
+  }
+  return out;
+}
+
+/* ===== Nelder-Mead simplex optimizer ===== */
+function nelderMead(f, x0, opts) {
+  opts = opts || {};
+  const dim = x0.length;
+  const maxIter = opts.maxIter || 200;
+  const tol = opts.tol || 1e-8;
+  const alpha = 1.0;
+  const gamma = 2.0;
+  const rho = 0.5;
+  const sigma = 0.5;
+  const initStep = opts.initStep || 0.3;
+
+  const simplex = [];
+  simplex.push({ x: x0.slice(), fx: f(x0) });
+  for (let i = 0; i < dim; i++) {
+    const xi = x0.slice();
+    xi[i] += initStep;
+    simplex.push({ x: xi, fx: f(xi) });
+  }
+
+  function centroid(exclude) {
+    const c = new Array(dim).fill(0);
+    for (let i = 0; i <= dim; i++) {
+      if (i === exclude) continue;
+      for (let j = 0; j < dim; j++) c[j] += simplex[i].x[j];
+    }
+    for (let j = 0; j < dim; j++) c[j] /= dim;
+    return c;
+  }
+
+  for (let iter = 0; iter < maxIter; iter++) {
+    simplex.sort((a, b) => a.fx - b.fx);
+    const fRange = simplex[dim].fx - simplex[0].fx;
+    if (fRange < tol) break;
+
+    const worst = dim;
+    const secondWorst = dim - 1;
+    const best = 0;
+    const c = centroid(worst);
+
+    const xr = c.map((ci, j) => ci + alpha * (ci - simplex[worst].x[j]));
+    const fr = f(xr);
+
+    if (fr < simplex[secondWorst].fx && fr >= simplex[best].fx) {
+      simplex[worst] = { x: xr, fx: fr };
+      continue;
+    }
+
+    if (fr < simplex[best].fx) {
+      const xe = c.map((ci, j) => ci + gamma * (xr[j] - ci));
+      const fe = f(xe);
+      if (fe < fr) {
+        simplex[worst] = { x: xe, fx: fe };
+      } else {
+        simplex[worst] = { x: xr, fx: fr };
+      }
+      continue;
+    }
+
+    const xc = c.map((ci, j) => ci + rho * (simplex[worst].x[j] - ci));
+    const fc = f(xc);
+    if (fc < simplex[worst].fx) {
+      simplex[worst] = { x: xc, fx: fc };
+      continue;
+    }
+
+    for (let i = 1; i <= dim; i++) {
+      for (let j = 0; j < dim; j++) {
+        simplex[i].x[j] = simplex[best].x[j] + sigma * (simplex[i].x[j] - simplex[best].x[j]);
+      }
+      simplex[i].fx = f(simplex[i].x);
+    }
+  }
+
+  simplex.sort((a, b) => a.fx - b.fx);
+  return { x: simplex[0].x, fx: simplex[0].fx };
+}
+
+/* ===== CSS residual computation ===== */
+function cssResiduals(y, phi, theta) {
+  const T = y.length;
+  const p = phi.length;
+  const q = theta.length;
+  const e = new Array(T).fill(0);
+
+  for (let t = 0; t < T; t++) {
+    let val = y[t];
+    for (let i = 1; i <= p; i++) {
+      if (t - i >= 0) val -= phi[i - 1] * y[t - i];
+    }
+    for (let j = 1; j <= q; j++) {
+      if (t - j >= 0) val -= theta[j - 1] * e[t - j];
+    }
+    e[t] = val;
+  }
+
+  let ssr = 0;
+  for (let t = 0; t < T; t++) ssr += e[t] * e[t];
+  return { e, ssr };
+}
+
+/* ===== computeIC(ssr, n, nParams, type) ===== */
+function computeIC(ssr, n, nParams, type) {
+  const logLik = n * Math.log(ssr / n);
+  if (type === 'bic') return logLik + Math.log(n) * nParams;
+  return logLik + 2 * nParams;
+}
+
+/* ===== fitARMA_CSS(y, p, q) ===== */
+function fitARMA_CSS(y, p, q) {
+  const n = y.length;
+  const mu = mean(y);
+  const yd = y.map(v => v - mu);
+
+  let phiHat = [], thetaHat = [], ssr;
+
+  if (p > 0 && q === 0) {
+    const X = [], Y = [];
+    for (let t = p; t < n; t++) {
+      const row = [];
+      for (let i = 1; i <= p; i++) row.push(yd[t - i]);
+      X.push(row);
+      Y.push(yd[t]);
+    }
+    const res = OLS(X, Y);
+    phiHat = res.beta.slice();
+    ssr = res.resid.reduce((a, c) => a + c * c, 0);
+    const nEff = n - p;
+    const nParams = p + 1;
+    return {
+      phi: phiHat, theta: [], ssr, sigma2: ssr / nEff,
+      aic: computeIC(ssr, nEff, nParams, 'aic'),
+      bic: computeIC(ssr, nEff, nParams, 'bic'),
+      n: nEff
+    };
+  }
+
+  if (p === 0 && q > 0) {
+    const objective = (params) => {
+      const th = params.slice(0, q);
+      const res = cssResiduals(yd, [], th);
+      const coeffs = [1, ...th];
+      if (!rootsOutsideUnitCircle(coeffs)) return res.ssr * 10;
+      return res.ssr;
+    };
+    const x0 = new Array(q).fill(0);
+    const result = nelderMead(objective, x0, { maxIter: 300, initStep: 0.2 });
+    thetaHat = result.x.slice(0, q);
+    ssr = cssResiduals(yd, [], thetaHat).ssr;
+  } else if (p === 0 && q === 0) {
+    ssr = yd.reduce((a, c) => a + c * c, 0);
+  } else {
+    const objective = (params) => {
+      const ph = params.slice(0, p);
+      const th = params.slice(p, p + q);
+      const res = cssResiduals(yd, ph, th);
+      const arCoeffs = [1, ...ph.map(v => -v)];
+      const maCoeffs = [1, ...th];
+      let penalty = 1;
+      if (!rootsOutsideUnitCircle(arCoeffs)) penalty *= 10;
+      if (!rootsOutsideUnitCircle(maCoeffs)) penalty *= 10;
+      return res.ssr * penalty;
+    };
+    const x0 = new Array(p + q).fill(0);
+    const result = nelderMead(objective, x0, { maxIter: 400, initStep: 0.2 });
+    phiHat = result.x.slice(0, p);
+    thetaHat = result.x.slice(p, p + q);
+    ssr = cssResiduals(yd, phiHat, thetaHat).ssr;
+  }
+
+  const nParams = p + q + 1;
+  return {
+    phi: phiHat, theta: thetaHat, ssr, sigma2: ssr / n,
+    aic: computeIC(ssr, n, nParams, 'aic'),
+    bic: computeIC(ssr, n, nParams, 'bic'),
+    n
+  };
+}
+
+
+/* ================================================================
+   DRAWING FUNCTIONS — adapted from stationarity-trainer.html
+   ================================================================ */
+
+function drawLine(canvas, series) {
+  const ctx = canvas.getContext('2d'); const W = canvas.width, H = canvas.height; ctx.clearRect(0, 0, W, H);
+  const px = 40, py = 18; const n = series.length;
+  const mn = Math.min(...series), mx = Math.max(...series);
+  const pad = (mx - mn) || 1; const ymin = mn - 0.1 * pad, ymax = mx + 0.1 * pad;
+  // Grid
+  ctx.strokeStyle = '#e6e6e6'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) { const y = py + (H - 2 * py) * i / 5; ctx.beginPath(); ctx.moveTo(px, y); ctx.lineTo(W - 10, y); ctx.stroke(); }
+  // Axes
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px, H - py); ctx.lineTo(W - 10, H - py); ctx.moveTo(px, py); ctx.lineTo(px, H - py); ctx.stroke();
+  // Y-axis labels
+  ctx.fillStyle = '#666'; ctx.font = '10px system-ui'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 5; i++) {
+    const val = ymax - (ymax - ymin) * i / 5;
+    const y = py + (H - 2 * py) * i / 5;
+    ctx.fillText(val.toFixed(1), px - 4, y + 3);
+  }
+  // X-axis labels
+  ctx.textAlign = 'center';
+  const step = Math.max(1, Math.floor(n / 5));
+  for (let i = 0; i < n; i += step) {
+    const x = px + (W - px - 10) * i / (n - 1);
+    ctx.fillText(i + 1, x, H - 3);
+  }
+  // Series
+  ctx.strokeStyle = '#1f77b4'; ctx.lineWidth = 1.5; ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const x = px + (W - px - 10) * i / (n - 1); const y = py + (H - 2 * py) * (1 - (series[i] - ymin) / (ymax - ymin));
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  } ctx.stroke();
+}
+
+function drawBars(canvas, values, maxLag) {
+  const ctx = canvas.getContext('2d'); const W = canvas.width, H = canvas.height; ctx.clearRect(0, 0, W, H);
+  const px = 40, py = 18; const m = maxLag || values.length - 1;
+  // Grid
+  ctx.strokeStyle = '#e6e6e6';
+  for (let i = 0; i <= 4; i++) { const y = py + (H - 2 * py) * i / 4; ctx.beginPath(); ctx.moveTo(px, y); ctx.lineTo(W - 10, y); ctx.stroke(); }
+  // Axes
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.beginPath();
+  const zeroY = py + (H - 2 * py) * 0.5;
+  ctx.moveTo(px, zeroY); ctx.lineTo(W - 10, zeroY); ctx.moveTo(px, py); ctx.lineTo(px, H - py); ctx.stroke();
+  // Y-axis labels
+  ctx.fillStyle = '#666'; ctx.font = '10px system-ui'; ctx.textAlign = 'right';
+  for (let v = -1; v <= 1; v += 0.5) {
+    const y = py + (H - 2 * py) * (1 - (v * 0.5 + 0.5));
+    ctx.fillText(v.toFixed(1), px - 4, y + 3);
+  }
+  // CI bands
+  const T = values.meta ? values.meta.T : m * 2;
+  const ci = 1.96 / Math.sqrt(T);
+  const ciTop = py + (H - 2 * py) * (1 - (ci * 0.5 + 0.5));
+  const ciBot = py + (H - 2 * py) * (1 - (-ci * 0.5 + 0.5));
+  ctx.strokeStyle = '#bbb'; ctx.setLineDash([4, 3]); ctx.beginPath();
+  ctx.moveTo(px, ciTop); ctx.lineTo(W - 10, ciTop); ctx.moveTo(px, ciBot); ctx.lineTo(W - 10, ciBot); ctx.stroke(); ctx.setLineDash([]);
+  // Bars
+  const bw = (W - px - 10) / (m + 1);
+  ctx.textAlign = 'center';
+  const labelStep = m <= 20 ? 1 : m <= 40 ? 2 : 5;
+  for (let k = 1; k <= m && k < values.length; k++) {
+    const v = Math.max(-1, Math.min(1, values[k]));
+    const x = px + bw * (k - 0.5);
+    const base = zeroY;
+    const y = py + (H - 2 * py) * (1 - (v * 0.5 + 0.5));
+    ctx.fillStyle = '#1f77b4';
+    ctx.fillRect(x - bw * 0.35, Math.min(base, y), bw * 0.7, Math.abs(base - y));
+    if (k % labelStep === 0 || k === 1) {
+      ctx.fillStyle = '#666'; ctx.font = '9px system-ui';
+      ctx.fillText(k, x, H - 3);
+    }
+  }
+}
+
+function drawBarsWithOverlay(canvas, sampleValues, theoreticalValues, maxLag) {
+  // First draw the sample bars
+  drawBars(canvas, sampleValues, maxLag);
+
+  // Then overlay theoretical values as red dots connected by lines
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const px = 40, py = 18;
+  const m = maxLag || sampleValues.length - 1;
+  const bw = (W - px - 10) / (m + 1);
+
+  ctx.strokeStyle = '#d62728';
+  ctx.fillStyle = '#d62728';
+  ctx.lineWidth = 1.5;
+
+  // Draw connecting line
+  ctx.beginPath();
+  let started = false;
+  for (let k = 1; k <= m && k < theoreticalValues.length; k++) {
+    const v = Math.max(-1, Math.min(1, theoreticalValues[k]));
+    const x = px + bw * (k - 0.5);
+    const y = py + (H - 2 * py) * (1 - (v * 0.5 + 0.5));
+    if (!started) { ctx.moveTo(x, y); started = true; }
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Draw dots
+  for (let k = 1; k <= m && k < theoreticalValues.length; k++) {
+    const v = Math.max(-1, Math.min(1, theoreticalValues[k]));
+    const x = px + bw * (k - 0.5);
+    const y = py + (H - 2 * py) * (1 - (v * 0.5 + 0.5));
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+}
+
+
+/* ================================================================
+   STATE AND UI WIRING
+   ================================================================ */
+
+let currentDifficulty = 'intermediate';
+let currentMode = 'easy';
+let selectedModel = null;
+let selectedIC = 'aic';
+let sessionCorrect = 0;
+let sessionTotal = 0;
+let currentStreak = 0;
+let bestStreak = 0;
+let history = [];
+let current = null;
+let answered = false;
+
+const MAX_LAG = 20;
+
+/* ===== DOM elements ===== */
+const diffButtons = {
+  beginner: document.getElementById('diff-beginner'),
+  intermediate: document.getElementById('diff-intermediate'),
+  advanced: document.getElementById('diff-advanced')
+};
+const modeEasy = document.getElementById('mode-easy');
+const modeHard = document.getElementById('mode-hard');
+const orderSection = document.getElementById('order-inputs-section');
+const modelButtons = {
+  AR: document.getElementById('model-ar'),
+  MA: document.getElementById('model-ma'),
+  ARMA: document.getElementById('model-arma')
+};
+const inpP = document.getElementById('inp-p');
+const inpQ = document.getElementById('inp-q');
+const icAIC = document.getElementById('ic-aic');
+const icBIC = document.getElementById('ic-bic');
+const icActiveLabel = document.getElementById('ic-active-label');
+
+const canvasTS = document.getElementById('plot-ts');
+const canvasACF = document.getElementById('plot-acf');
+const canvasPACF = document.getElementById('plot-pacf');
+
+/* ===== Session persistence ===== */
+const LS_KEY = 'acf-pacf-trainer-v1';
+
+function loadSession() {
+  try {
+    const data = JSON.parse(localStorage.getItem(LS_KEY));
+    if (data) {
+      sessionCorrect = data.sessionCorrect || 0;
+      sessionTotal = data.sessionTotal || 0;
+      currentStreak = data.currentStreak || 0;
+      bestStreak = data.bestStreak || 0;
+      history = data.history || [];
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function saveSession() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      sessionCorrect, sessionTotal, currentStreak, bestStreak, history
+    }));
+  } catch (e) { /* ignore */ }
+}
+
+loadSession();
+
+/* ===== Score display ===== */
+function updateScoreDisplay() {
+  const pct = sessionTotal > 0 ? Math.round(100 * sessionCorrect / sessionTotal) : '--';
+  document.getElementById('score').textContent = sessionCorrect + ' / ' + sessionTotal + ' (' + pct + (pct !== '--' ? '%' : '') + ')';
+
+  const streakEl = document.getElementById('streak-display');
+  if (currentStreak >= 3) {
+    streakEl.innerHTML = '<span class="streak-badge hot">' + currentStreak + ' streak</span>';
+  } else if (sessionTotal > 0) {
+    streakEl.innerHTML = '<span class="streak-badge cold">' + currentStreak + ' streak</span>';
+  } else {
+    streakEl.innerHTML = '';
+  }
+}
+
+updateScoreDisplay();
+
+/* ===== Difficulty bar ===== */
+function setDifficulty(level) {
+  currentDifficulty = level;
+  Object.values(diffButtons).forEach(b => b.classList.remove('active'));
+  diffButtons[level].classList.add('active');
+}
+
+diffButtons.beginner.addEventListener('click', () => setDifficulty('beginner'));
+diffButtons.intermediate.addEventListener('click', () => setDifficulty('intermediate'));
+diffButtons.advanced.addEventListener('click', () => setDifficulty('advanced'));
+
+/* ===== Mode toggle ===== */
+function setMode(mode) {
+  currentMode = mode;
+  modeEasy.classList.toggle('active', mode === 'easy');
+  modeHard.classList.toggle('active', mode === 'hard');
+  orderSection.style.display = mode === 'hard' ? 'block' : 'none';
+  updateSpinnerStates();
+}
+
+modeEasy.addEventListener('click', () => setMode('easy'));
+modeHard.addEventListener('click', () => setMode('hard'));
+
+/* ===== Model class selector ===== */
+function selectModel(model) {
+  if (answered) return;
+  selectedModel = model;
+  Object.values(modelButtons).forEach(b => b.classList.remove('selected'));
+  if (model) modelButtons[model].classList.add('selected');
+  updateSpinnerStates();
+}
+
+function updateSpinnerStates() {
+  if (currentMode !== 'hard') return;
+  if (selectedModel === 'AR') {
+    inpP.disabled = false;
+    inpQ.disabled = true;
+    inpQ.value = '0';
+  } else if (selectedModel === 'MA') {
+    inpP.disabled = true;
+    inpP.value = '0';
+    inpQ.disabled = false;
+  } else if (selectedModel === 'ARMA') {
+    inpP.disabled = false;
+    inpQ.disabled = false;
+  } else {
+    inpP.disabled = false;
+    inpQ.disabled = false;
+  }
+}
+
+modelButtons.AR.addEventListener('click', () => selectModel('AR'));
+modelButtons.MA.addEventListener('click', () => selectModel('MA'));
+modelButtons.ARMA.addEventListener('click', () => selectModel('ARMA'));
+
+/* ===== IC selector toggle ===== */
+function setIC(type) {
+  selectedIC = type;
+  icAIC.classList.toggle('active', type === 'aic');
+  icBIC.classList.toggle('active', type === 'bic');
+  icActiveLabel.textContent = '(' + type.toUpperCase() + ')';
+}
+
+icAIC.addEventListener('click', () => setIC('aic'));
+icBIC.addEventListener('click', () => setIC('bic'));
+
+
+/* ================================================================
+   CORE GAME LOGIC
+   ================================================================ */
+
+function generate(useSame) {
+  // Seed
+  const seedInput = document.getElementById('inp-seed').value.trim();
+  if (seedInput) {
+    setSeed(seedInput + '-' + sessionTotal);
+  } else {
+    setSeed(null);
+  }
+
+  let dgp;
+  if (useSame && current && current.dgp) {
+    // Reuse the same DGP meta but regenerate with new random draws
+    dgp = current.dgp;
+  } else {
+    dgp = chooseDGP(currentDifficulty);
+  }
+
+  const mu = rnorm() * 2;
+  const result = generateStationary(dgp.T, dgp.p, dgp.q, mu, dgp.difficulty);
+
+  const sampleACF = acf(result.y, MAX_LAG);
+  sampleACF.meta = { T: dgp.T };
+  const samplePACF = pacf(result.y, MAX_LAG);
+  samplePACF.meta = { T: dgp.T };
+
+  current = {
+    dgp: dgp,
+    y: result.y,
+    phi: result.phi,
+    theta: result.theta,
+    mu: result.mu,
+    T: dgp.T,
+    sampleACF: sampleACF,
+    samplePACF: samplePACF
+  };
+
+  // Draw plots
+  drawLine(canvasTS, result.y);
+  document.getElementById('lbl-ts').innerHTML = 'Time series y<sub>t</sub> (T = ' + dgp.T + ')';
+
+  drawBars(canvasACF, sampleACF, MAX_LAG);
+  document.getElementById('lbl-acf').textContent = 'Sample ACF';
+
+  drawBars(canvasPACF, samplePACF, MAX_LAG);
+  document.getElementById('lbl-pacf').textContent = 'Sample PACF';
+
+  // Reset UI state
+  answered = false;
+  selectModel(null);
+  inpP.value = '1';
+  inpQ.value = '1';
+  inpP.disabled = false;
+  inpQ.disabled = false;
+
+  // Enable inputs
+  Object.values(modelButtons).forEach(b => b.disabled = false);
+  document.getElementById('btn-submit').disabled = false;
+
+  // Reset evidence radios
+  document.querySelectorAll('.evidence-radio').forEach(r => { r.checked = false; r.disabled = false; });
+  // Remove evidence result dots
+  document.querySelectorAll('.evidence-result').forEach(e => e.remove());
+
+  // Hide reveal sections
+  document.getElementById('truth').textContent = '(answer to reveal)';
+  document.getElementById('overlay-note').style.display = 'none';
+  document.getElementById('walkthrough-box').style.display = 'none';
+  document.getElementById('scorecard-box').style.display = 'none';
+
+  // Reset IC table
+  document.getElementById('ic-val-student').innerHTML = '&mdash;';
+  document.getElementById('ic-params-student').innerHTML = '&mdash;';
+  document.getElementById('ic-val-true').innerHTML = '&mdash;';
+  document.getElementById('ic-params-true').innerHTML = '&mdash;';
+  document.getElementById('ic-row-student').classList.remove('better');
+  document.getElementById('ic-row-true').classList.remove('better');
+  // Remove any IC note
+  const existingNote = document.getElementById('ic-note');
+  if (existingNote) existingNote.remove();
+}
+
+function recordAnswer() {
+  if (!current) return;
+  if (answered) return;
+  if (!selectedModel) {
+    // Flash the model selector briefly
+    const sel = document.querySelector('.model-selector');
+    sel.style.outline = '2px solid ' + getComputedStyle(document.documentElement).getPropertyValue('--bad');
+    setTimeout(() => sel.style.outline = '', 1000);
+    return;
+  }
+
+  answered = true;
+
+  // Read student's answer
+  const studentClass = selectedModel;
+  let studentP, studentQ;
+  if (currentMode === 'hard') {
+    studentP = parseInt(inpP.value) || 0;
+    studentQ = parseInt(inpQ.value) || 0;
+  } else {
+    // Easy mode: infer defaults for IC comparison
+    if (studentClass === 'AR') { studentP = 1; studentQ = 0; }
+    else if (studentClass === 'MA') { studentP = 0; studentQ = 1; }
+    else { studentP = 1; studentQ = 1; }
+  }
+
+  // Determine correctness
+  const trueClass = current.dgp.modelClass;
+  const trueP = current.dgp.p;
+  const trueQ = current.dgp.q;
+
+  let correct = false;
+  let correctDetail = '';
+
+  if (currentMode === 'easy') {
+    correct = (studentClass === trueClass);
+    correctDetail = correct ? 'Correct model class' : 'Incorrect model class';
+  } else {
+    // Hard mode: class AND orders
+    const classMatch = (studentClass === trueClass);
+    const exactMatch = classMatch && studentP === trueP && studentQ === trueQ;
+    const plusOneMatch = classMatch && studentP === trueP + (trueP > 0 ? 1 : 0) && studentQ === trueQ + (trueQ > 0 ? 1 : 0);
+
+    if (plusOneMatch) {
+      correct = true;
+      correctDetail = 'Correct (preferred: true orders + 1)';
+    } else if (exactMatch) {
+      correct = true;
+      correctDetail = 'Correct (matches true DGP directly)';
+    } else if (classMatch) {
+      correct = false;
+      correctDetail = 'Correct class but wrong orders';
+    } else {
+      correct = false;
+      correctDetail = 'Incorrect model class';
+    }
+  }
+
+  // Lock all inputs
+  Object.values(modelButtons).forEach(b => b.disabled = true);
+  document.getElementById('btn-submit').disabled = true;
+  inpP.disabled = true;
+  inpQ.disabled = true;
+  document.querySelectorAll('.evidence-radio').forEach(r => r.disabled = true);
+
+  // Call reveal
+  reveal(correct, {
+    studentClass, studentP, studentQ,
+    trueClass, trueP, trueQ,
+    correctDetail
+  });
+}
+
+function reveal(correct, details) {
+  const { studentClass, studentP, studentQ, trueClass, trueP, trueQ, correctDetail } = details;
+
+  // --- Show truth ---
+  let truthText = trueClass + '(';
+  if (trueClass === 'AR') truthText += trueP;
+  else if (trueClass === 'MA') truthText += trueQ;
+  else truthText += trueP + ',' + trueQ;
+  truthText += ')';
+
+  const phiStr = current.phi.length > 0 ? current.phi.map(v => v.toFixed(3)).join(', ') : 'none';
+  const thetaStr = current.theta.length > 0 ? current.theta.map(v => v.toFixed(3)).join(', ') : 'none';
+
+  let truthHTML = '<div style="margin-bottom:4px;">';
+  truthHTML += correct
+    ? '<span class="pill correct">Correct</span>'
+    : '<span class="pill incorrect">Incorrect</span>';
+  truthHTML += ' <span style="font-size:11px;color:var(--muted);">' + correctDetail + '</span>';
+  truthHTML += '</div>';
+  truthHTML += '<div>True DGP: <b>' + truthText + '</b></div>';
+  truthHTML += '<div>phi: [' + phiStr + ']</div>';
+  truthHTML += '<div>theta: [' + thetaStr + ']</div>';
+  truthHTML += '<div>mu: ' + current.mu.toFixed(3) + '</div>';
+  document.getElementById('truth').innerHTML = truthHTML;
+
+  // --- Theoretical ACF/PACF overlay ---
+  const thACF = theoreticalACF(current.phi, current.theta, MAX_LAG);
+  const thPACF = theoreticalPACF(thACF, MAX_LAG);
+
+  drawBarsWithOverlay(canvasACF, current.sampleACF, thACF, MAX_LAG);
+  document.getElementById('lbl-acf').textContent = 'Sample ACF (red = theoretical)';
+
+  drawBarsWithOverlay(canvasPACF, current.samplePACF, thPACF, MAX_LAG);
+  document.getElementById('lbl-pacf').textContent = 'Sample PACF (red = theoretical)';
+
+  document.getElementById('overlay-note').style.display = 'block';
+
+  // --- IC comparison ---
+  try {
+    const fitStudent = fitARMA_CSS(current.y, studentP, studentQ);
+    const fitTrue = fitARMA_CSS(current.y, trueP, trueQ);
+
+    const icType = selectedIC;
+    const icStudent = icType === 'aic' ? fitStudent.aic : fitStudent.bic;
+    const icTrue = icType === 'aic' ? fitTrue.aic : fitTrue.bic;
+
+    document.getElementById('ic-val-student').textContent = icStudent.toFixed(2);
+    document.getElementById('ic-params-student').textContent = String(studentP + studentQ + 1);
+    document.getElementById('ic-val-true').textContent = icTrue.toFixed(2);
+    document.getElementById('ic-params-true').textContent = String(trueP + trueQ + 1);
+
+    // Highlight better model
+    const studentRow = document.getElementById('ic-row-student');
+    const trueRow = document.getElementById('ic-row-true');
+    studentRow.classList.remove('better');
+    trueRow.classList.remove('better');
+    if (icStudent < icTrue) {
+      studentRow.classList.add('better');
+    } else {
+      trueRow.classList.add('better');
+    }
+
+    // Note if student beats true DGP
+    const existingNote = document.getElementById('ic-note');
+    if (existingNote) existingNote.remove();
+    if (icStudent < icTrue) {
+      const note = document.createElement('div');
+      note.id = 'ic-note';
+      note.className = 'theoretical-overlay-note';
+      note.style.marginTop = '4px';
+      note.textContent = 'Your model fits this particular sample better than the true DGP \u2014 information criteria are sample-dependent!';
+      document.getElementById('ic-row-true').closest('table').parentNode.appendChild(note);
+    }
+  } catch (e) {
+    document.getElementById('ic-val-student').textContent = 'error';
+    document.getElementById('ic-val-true').textContent = 'error';
+  }
+
+  // --- Score evidence checklist ---
+  scoreEvidence(trueClass, trueP, trueQ);
+
+  // --- Build explanation ---
+  const explanation = buildExplanation(details, correct);
+  document.getElementById('walkthrough').innerHTML = explanation;
+  document.getElementById('walkthrough-box').style.display = 'block';
+
+  // --- Scorecard ---
+  const scBox = document.getElementById('scorecard-box');
+  scBox.style.display = 'block';
+  scBox.innerHTML = '<div class="scorecard"><div class="sc-title">' +
+    (correct ? 'Correct!' : 'Incorrect') + '</div>' +
+    '<div>You answered: ' + studentClass + (currentMode === 'hard' ? '(' + studentP + ',' + studentQ + ')' : '') + '</div>' +
+    '<div>True model: ' + truthText + '</div></div>';
+
+  // --- Update session stats ---
+  if (correct) {
+    sessionCorrect++;
+    currentStreak++;
+    if (currentStreak > bestStreak) bestStreak = currentStreak;
+  } else {
+    currentStreak = 0;
+  }
+  sessionTotal++;
+
+  // History entry
+  let icStudentVal = null, icTrueVal = null;
+  try {
+    const fitS = fitARMA_CSS(current.y, studentP, studentQ);
+    const fitT = fitARMA_CSS(current.y, trueP, trueQ);
+    icStudentVal = selectedIC === 'aic' ? fitS.aic : fitS.bic;
+    icTrueVal = selectedIC === 'aic' ? fitT.aic : fitT.bic;
+  } catch (e) { /* ignore */ }
+
+  history.push({
+    timestamp: new Date().toISOString(),
+    T: current.T,
+    trueClass, trueP, trueQ,
+    studentClass, studentP, studentQ,
+    correct,
+    difficulty: currentDifficulty,
+    mode: currentMode,
+    ic_student: icStudentVal,
+    ic_true: icTrueVal
+  });
+
+  updateScoreDisplay();
+  saveSession();
+}
+
+function scoreEvidence(trueClass, trueP, trueQ) {
+  // Determine correct answer for decay comparison
+  let correctDecay;
+
+  if (trueClass === 'AR') {
+    correctDecay = 'ACF';       // ACF decays slower for AR
+  } else if (trueClass === 'MA') {
+    correctDecay = 'PACF';      // PACF decays slower for MA
+  } else {
+    correctDecay = 'Ambiguous';  // Both decay for ARMA
+  }
+
+  // Score "Which decays slower?"
+  const evDecay = document.querySelector('input[name="ev-decay"]:checked');
+  const decayRow = document.querySelector('tr[data-ev="decay"]');
+  if (evDecay) {
+    let cls;
+    if (evDecay.value === correctDecay) {
+      cls = 'ev-correct';
+    } else if (trueClass === 'ARMA' || evDecay.value === 'Ambiguous') {
+      cls = 'ev-ambiguous';  // ARMA is ambiguous; "Ambiguous" answer is partially correct
+    } else {
+      cls = 'ev-incorrect';
+    }
+    addEvidenceDot(decayRow, cls);
+  }
+
+}
+
+function addEvidenceDot(row, cls) {
+  if (!row) return;
+  // Remove existing dots
+  row.querySelectorAll('.evidence-result').forEach(e => e.remove());
+  const dot = document.createElement('span');
+  dot.className = 'evidence-result ' + cls;
+  row.querySelector('td:first-child').appendChild(dot);
+}
+
+function buildExplanation(details, correct) {
+  const { trueClass, trueP, trueQ, studentClass, studentP, studentQ } = details;
+  let lines = [];
+
+  // State the true DGP
+  let modelStr = trueClass + '(';
+  if (trueClass === 'AR') modelStr += trueP;
+  else if (trueClass === 'MA') modelStr += trueQ;
+  else modelStr += trueP + ',' + trueQ;
+  modelStr += ')';
+
+  lines.push('<b>True DGP: ' + modelStr + '</b>');
+  lines.push('');
+
+  // Walk through identification logic
+  if (trueClass === 'AR') {
+    lines.push('The ACF decays slowly (geometrically or with damped oscillations) while the PACF cuts off after lag p = ' + trueP + '. This pattern indicates an AR process.');
+    lines.push('');
+    lines.push('Taking ' + trueP + ' significant consecutive PACF lag' + (trueP > 1 ? 's' : '') + ' and adding 1 gives a starting point of AR(' + (trueP + 1) + ') for general-to-specific model selection.');
+    lines.push('');
+    lines.push('The preferred answer is <b>AR(' + (trueP + 1) + ')</b>. AR(' + trueP + ') is also accepted as it matches the true DGP directly.');
+  } else if (trueClass === 'MA') {
+    lines.push('The PACF decays slowly (geometrically or with damped oscillations) while the ACF cuts off after lag q = ' + trueQ + '. This pattern indicates an MA process.');
+    lines.push('');
+    lines.push('Taking ' + trueQ + ' significant consecutive ACF lag' + (trueQ > 1 ? 's' : '') + ' and adding 1 gives a starting point of MA(' + (trueQ + 1) + ') for general-to-specific model selection.');
+    lines.push('');
+    lines.push('The preferred answer is <b>MA(' + (trueQ + 1) + ')</b>. MA(' + trueQ + ') is also accepted as it matches the true DGP directly.');
+  } else {
+    lines.push('Both the ACF and PACF decay gradually \u2014 neither cuts off cleanly. This pattern suggests an ARMA process.');
+    lines.push('');
+    lines.push('The recommended starting point is <b>ARMA(' + (trueP + 1) + ',' + (trueQ + 1) + ')</b>, then reduce via information criteria. ARMA(' + trueP + ',' + trueQ + ') is also accepted.');
+  }
+
+  // If wrong, explain what student likely misread
+  if (!correct) {
+    lines.push('');
+    lines.push('<span style="color:var(--bad);">Your answer was ' + studentClass +
+      (currentMode === 'hard' ? '(' + studentP + ',' + studentQ + ')' : '') + '.</span>');
+
+    if (studentClass !== trueClass) {
+      if (trueClass === 'AR' && studentClass === 'MA') {
+        lines.push('You may have confused which correlogram decays slower. For AR models, the ACF decays slowly and the PACF cuts off.');
+      } else if (trueClass === 'MA' && studentClass === 'AR') {
+        lines.push('You may have confused which correlogram decays slower. For MA models, the PACF decays slowly and the ACF cuts off.');
+      } else if (studentClass === 'ARMA') {
+        lines.push('While both correlograms may show decay, the key is whether one clearly cuts off. Look more carefully at the pattern of significance.');
+      } else if (trueClass === 'ARMA') {
+        lines.push('When both ACF and PACF decay gradually without a clean cutoff, ARMA is the appropriate model class.');
+      }
+    } else {
+      // Class correct but orders wrong
+      lines.push('The model class is correct, but the lag orders need adjustment. Count the number of significant consecutive lags and add 1.');
+    }
+  }
+
+  // Common traps
+  let traps = [];
+  if (trueClass === 'AR' && trueP === 1 && current.phi.length > 0 && Math.abs(current.phi[0]) >= 0.85) {
+    traps.push('High-persistence AR(1): The ACF decays very slowly, which can mimic ARMA behavior. The PACF clearly cutting off at lag 1 is the key diagnostic.');
+  }
+  if (trueClass === 'MA' && trueQ === 1 && current.theta.length > 0 && Math.abs(current.theta[0]) >= 0.8) {
+    traps.push('MA(1) with large theta: The PACF shows alternating decay that may appear to have structure beyond what a simple MA implies.');
+  }
+  if (trueClass === 'ARMA' && current.phi.length > 0 && current.theta.length > 0) {
+    if (Math.abs(current.phi[0] - current.theta[0]) < 0.15) {
+      traps.push('Near-cancellation: The AR and MA roots are close together, making the process appear closer to white noise. Both ACF and PACF will be small.');
+    }
+  }
+  if (current.T <= 60) {
+    traps.push('Small sample (T = ' + current.T + '): With fewer observations, sample ACF/PACF are noisier. Spurious spikes at higher lags are more likely.');
+  }
+
+  if (traps.length > 0) {
+    lines.push('');
+    lines.push('<b>Common traps in this series:</b>');
+    for (const trap of traps) {
+      lines.push('&bull; ' + trap);
+    }
+  }
+
+  return lines.join('<br>');
+}
+
+
+/* ================================================================
+   RESET / DOWNLOAD / KEYBOARD
+   ================================================================ */
+
+function resetSession() {
+  sessionCorrect = 0;
+  sessionTotal = 0;
+  currentStreak = 0;
+  bestStreak = 0;
+  history = [];
+  current = null;
+  answered = false;
+  updateScoreDisplay();
+  saveSession();
+
+  // Clear plots
+  canvasTS.getContext('2d').clearRect(0, 0, canvasTS.width, canvasTS.height);
+  canvasACF.getContext('2d').clearRect(0, 0, canvasACF.width, canvasACF.height);
+  canvasPACF.getContext('2d').clearRect(0, 0, canvasPACF.width, canvasPACF.height);
+
+  document.getElementById('lbl-ts').innerHTML = 'Time series y<sub>t</sub>';
+  document.getElementById('lbl-acf').textContent = 'Sample ACF';
+  document.getElementById('lbl-pacf').textContent = 'Sample PACF';
+
+  // Reset right panel
+  document.getElementById('truth').textContent = '(answer to reveal)';
+  document.getElementById('overlay-note').style.display = 'none';
+  document.getElementById('walkthrough-box').style.display = 'none';
+  document.getElementById('scorecard-box').style.display = 'none';
+
+  document.getElementById('ic-val-student').innerHTML = '&mdash;';
+  document.getElementById('ic-params-student').innerHTML = '&mdash;';
+  document.getElementById('ic-val-true').innerHTML = '&mdash;';
+  document.getElementById('ic-params-true').innerHTML = '&mdash;';
+  document.getElementById('ic-row-student').classList.remove('better');
+  document.getElementById('ic-row-true').classList.remove('better');
+  const existingNote = document.getElementById('ic-note');
+  if (existingNote) existingNote.remove();
+
+  // Reset controls
+  selectModel(null);
+  document.querySelectorAll('.evidence-radio').forEach(r => { r.checked = false; r.disabled = false; });
+  document.querySelectorAll('.evidence-result').forEach(e => e.remove());
+  Object.values(modelButtons).forEach(b => b.disabled = false);
+  document.getElementById('btn-submit').disabled = false;
+  inpP.disabled = false;
+  inpQ.disabled = false;
+  inpP.value = '1';
+  inpQ.value = '1';
+}
+
+function downloadCSV() {
+  if (history.length === 0) return;
+
+  const headers = ['timestamp', 'T', 'trueClass', 'trueP', 'trueQ', 'studentClass', 'studentP', 'studentQ', 'correct', 'difficulty', 'mode', 'ic_student', 'ic_true'];
+  const rows = [headers.join(',')];
+  for (const h of history) {
+    rows.push([
+      h.timestamp, h.T, h.trueClass, h.trueP, h.trueQ,
+      h.studentClass, h.studentP, h.studentQ,
+      h.correct ? 1 : 0, h.difficulty, h.mode,
+      h.ic_student !== null ? h.ic_student.toFixed(2) : '',
+      h.ic_true !== null ? h.ic_true.toFixed(2) : ''
+    ].join(','));
+  }
+
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'acf-pacf-trainer-history.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+
+/* ===== Event listeners ===== */
+document.getElementById('btn-generate').addEventListener('click', () => generate(false));
+document.getElementById('btn-same').addEventListener('click', () => generate(true));
+document.getElementById('btn-submit').addEventListener('click', () => recordAnswer());
+document.getElementById('btn-reset').addEventListener('click', () => resetSession());
+document.getElementById('btn-download').addEventListener('click', () => downloadCSV());
+
+/* ===== Keyboard shortcuts ===== */
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  switch (e.key.toLowerCase()) {
+    case 'g':
+      generate(false);
+      break;
+    case '1':
+      selectModel('AR');
+      break;
+    case '2':
+      selectModel('MA');
+      break;
+    case '3':
+      selectModel('ARMA');
+      break;
+    case 'enter':
+      recordAnswer();
+      break;
+  }
+});
+
+</script>
+</body>
+</html>
