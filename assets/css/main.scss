@@ -41,3 +41,18 @@
     "vendor/font-awesome/brands",
     "vendor/magnific-popup/magnific-popup"
 ;
+
+/* Collapsible abstract styling on index pages */
+details.abs { margin: .75rem 0 1rem; }
+details.abs > summary {
+  list-style: none; cursor: pointer; font-weight: 600;
+  display: inline-flex; align-items: center; gap: .5rem;
+}
+details.abs > summary::-webkit-details-marker { display: none; }
+details.abs > summary::before {
+  content: "+"; display: inline-block; width: 1.25rem; height: 1.25rem;
+  border: 1px solid currentColor; border-radius: .25rem;
+  text-align: center; line-height: 1.2rem; font-weight: 700;
+}
+details.abs[open] > summary::before { content: "−"; } /* U+2212 */
+details.abs > *:not(summary) { margin-top: .5rem; }
