@@ -10,3 +10,5 @@ location: "Washington DC, USA"
 
 2020 – Present (F/S)
 
+[Course materials and lecture notes](/gwu6376/)
+
