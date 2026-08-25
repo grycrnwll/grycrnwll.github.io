@@ -2329,7 +2329,7 @@ window.Quarto = {
   <li><a href="#the-box-jenkins-methodology" id="toc-the-box-jenkins-methodology" class="nav-link" data-scroll-target="#the-box-jenkins-methodology">4.2 The Box-Jenkins Methodology</a>
   <ul class="collapse">
   <li><a href="#the-four-step-workflow" id="toc-the-four-step-workflow" class="nav-link" data-scroll-target="#the-four-step-workflow">4.2.1 The Four-Step Workflow</a></li>
-  <li><a href="#the-detectives-case-file" id="toc-the-detectives-case-file" class="nav-link" data-scroll-target="#the-detectives-case-file">4.2.2 The Detective’s Case File</a></li>
+  <li><a href="#why-it-is-a-procedure-not-a-pick" id="toc-why-it-is-a-procedure-not-a-pick" class="nav-link" data-scroll-target="#why-it-is-a-procedure-not-a-pick">4.2.2 Why It Is a Procedure, Not a Pick</a></li>
   <li><a href="#mapping-the-course-onto-box-jenkins" id="toc-mapping-the-course-onto-box-jenkins" class="nav-link" data-scroll-target="#mapping-the-course-onto-box-jenkins">4.2.3 Mapping the Course onto Box-Jenkins</a></li>
   </ul></li>
   <li><a href="#maximum-likelihood-for-arma-concept-only" id="toc-maximum-likelihood-for-arma-concept-only" class="nav-link" data-scroll-target="#maximum-likelihood-for-arma-concept-only">4.3 Maximum Likelihood for ARMA — Concept Only</a>
@@ -2526,16 +2526,16 @@ window.Quarto = {
 </ol>
 <p>Today’s module covers Step 2 in full, adds <strong>information criteria</strong> as the intermediate scoring step between Steps 2 and 3, and previews Step 3 just enough to set up Module 5.</p>
 </section>
-<section id="the-detectives-case-file" class="level3">
-<h3 class="anchored" data-anchor-id="the-detectives-case-file">4.2.2 The Detective’s Case File</h3>
-<p>This is the organizing analogy for the module. A detective does not solve a case by pointing at one suspect. They:</p>
+<section id="why-it-is-a-procedure-not-a-pick" class="level3">
+<h3 class="anchored" data-anchor-id="why-it-is-a-procedure-not-a-pick">4.2.2 Why It Is a Procedure, Not a Pick</h3>
+<p>Read those four steps as a procedure rather than as a description. Each one hands something specific to the next, and the reason for running all four in order is that the model you end up with is then the output of a stated process instead of a judgment call about which specification looked right.</p>
 <ol type="1">
-<li><strong>Gather clues</strong> — fingerprints, witness statements, security footage. (Identification = ACF, PACF, <span class="math inline">\(d\)</span>.)</li>
-<li><strong>Form a suspect list</strong> — three or four candidates consistent with the clues. (Candidate set = a few <span class="math inline">\((p, q)\)</span> pairs.)</li>
-<li><strong>Interrogate each</strong> — hear out each suspect’s story and rate its plausibility. (Estimation + IC scoring.)</li>
-<li><strong>Convict the best fit</strong> — but only after cross-checking the story against the evidence. (Diagnostic checking.)</li>
+<li><strong>Identification produces a set, not a favorite.</strong> The order of integration from Module 2 and the correlograms from Module 3 give you the class and a plausible range of orders. They do not rank anything.</li>
+<li><strong>The candidate set is written down before anything is fitted.</strong> Three or four <span class="math inline">\((p, q)\)</span> pairs, fixed in advance, so that the comparison runs over a stated set rather than over whatever you happened to try until something looked good.</li>
+<li><strong>Every candidate is fitted, and every candidate is scored on the same terms.</strong> An order you did not fit has no log-likelihood and therefore no score, so it never enters the comparison.</li>
+<li><strong>The winner is checked before it is used.</strong> A best score is the best entry in the set you wrote down. It is not a statement that the model fits.</li>
 </ol>
-<p>No step skipped. A detective who goes straight from “I have fingerprints” to “I have a verdict” is the detective who convicts the wrong person. A time series modeler who goes straight from an ACF plot to <code>auto.arima()</code> without looking at the diagnostics is the same detective.</p>
+<p>Skipping a step breaks something specific. The common version is going from an ACF plot straight to <code>auto.arima()</code> and reporting whatever comes back: the candidate set was never stated, so nothing is known about what the winner beat, and the residuals were never inspected, so nothing is known about whether it fits. A ranking gets reported as a finished model.</p>
 </section>
 <section id="mapping-the-course-onto-box-jenkins" class="level3">
 <h3 class="anchored" data-anchor-id="mapping-the-course-onto-box-jenkins">4.2.3 Mapping the Course onto Box-Jenkins</h3>
@@ -2585,8 +2585,8 @@ window.Quarto = {
 <section id="what-is-a-likelihood" class="level3">
 <h3 class="anchored" data-anchor-id="what-is-a-likelihood">4.3.1 What Is a Likelihood?</h3>
 <p><strong>Plain-language definition.</strong> The likelihood is the probability of seeing the data you saw, <em>treated as a function of the parameters</em>. It asks: “Given these particular parameter values, how surprising is it that I got this exact data set?” Bigger likelihood means less surprising means the parameters fit the data well.</p>
-<p><strong>The hindsight framing.</strong> Likelihood is the frequentist’s version of hindsight. You already saw the data. You freeze it in place and then ask, “which parameter values would have made this the most likely thing to happen?” Those are the maximum likelihood estimates.</p>
-<p><strong>The eyewitness lineup analogy.</strong> You are the witness to a crime. You already saw the event happen — the data is fixed. The lineup is the set of possible parameter values. MLE is the answer to “which suspect in the lineup would have made what I saw most likely?” You are not changing the crime; you are walking down the lineup and asking, for each suspect, “how plausible is it that <em>this</em> person produced what I witnessed?” The suspect who scores highest is the MLE.</p>
+<p><strong>The hindsight framing.</strong> Likelihood is the frequentist’s version of hindsight. You already saw the data. Now ask, “which parameter values would have made this the most likely thing to happen?” Those are the maximum likelihood estimates.</p>
+<p><strong>Likelihood freezes the data and moves the parameters.</strong> The data you observed stay exactly where they are — nothing about them is being redrawn or reimagined. What moves is the parameter vector. You walk through candidate parameter values and, at each one, ask how much density the model places at the data you already have. The parameter values that place the most density there are the maximum likelihood estimates.</p>
 </section>
 <section id="the-gaussian-arma-log-likelihood-stated-not-derived" class="level3">
 <h3 class="anchored" data-anchor-id="the-gaussian-arma-log-likelihood-stated-not-derived">4.3.2 The Gaussian ARMA Log-Likelihood — Stated, Not Derived</h3>
@@ -3181,7 +3181,7 @@ Training set -0.002863087</code></pre>
 </section>
 <section id="an-honest-caveat" class="level3">
 <h3 class="anchored" data-anchor-id="an-honest-caveat">4.7.2 An Honest Caveat</h3>
-<p>Before we proceed, a caveat that is both honest and pedagogically deliberate. The unemployment rate is a monthly series, and the correlograms show bumps at lags 12 and 24 — negative, modest, but visible — which is a clue worth checking for annual seasonality. A seasonal ARIMA is a candidate to compare against, but the ACF by itself is not proof. We are going to proceed with a non-seasonal ARMA today <em>knowingly</em>, as a pedagogical exercise, and treat the seasonal ACF bumps as evidence that our model may be incomplete. This is a deliberate teaching choice: we want to run the Box-Jenkins workflow on a real series inside the Module 4 toolkit, and then <em>discover</em> that the toolkit is insufficient, which motivates Module 5.</p>
+<p>Before we proceed, a caveat that is both honest and pedagogically deliberate. The unemployment rate is a monthly series, and the correlograms show bumps at lags 12 and 24 — negative, modest, but visible — which is worth checking for annual seasonality. A seasonal ARIMA is a candidate to compare against, but the ACF by itself is not proof. We are going to proceed with a non-seasonal ARMA today <em>knowingly</em>, as a pedagogical exercise, and treat the seasonal ACF bumps as evidence that our model may be incomplete. This is a deliberate teaching choice: we want to run the Box-Jenkins workflow on a real series inside the Module 4 toolkit, and then <em>discover</em> that the toolkit is insufficient, which motivates Module 5.</p>
 </section>
 <section id="propose-candidates" class="level3">
 <h3 class="anchored" data-anchor-id="propose-candidates">4.7.3 Propose Candidates</h3>
@@ -3265,7 +3265,7 @@ sigma^2 = 0.02476:  log likelihood = 310.83
 AIC=-607.67   AICc=-607.51   BIC=-575.62</code></pre>
 </div>
 </div>
-<p>The non-seasonal call is now comparable to the manual grid on the mean restriction: both model <span class="math inline">\(\Delta y_t\)</span> with zero process mean, and both select ARMA(1,2). The seasonal call on levels selects ARIMA<span class="math inline">\((1,1,2)(2,0,1)_{12}\)</span> without drift. That is a preview rather than an IC comparison with the differenced table: it is evidence to add seasonal AR/MA candidates to the suspect list, not proof that a seasonal difference is required.</p>
+<p>The non-seasonal call is now comparable to the manual grid on the mean restriction: both model <span class="math inline">\(\Delta y_t\)</span> with zero process mean, and both select ARMA(1,2). The seasonal call on levels selects ARIMA<span class="math inline">\((1,1,2)(2,0,1)_{12}\)</span> without drift. That is a preview rather than an IC comparison with the differenced table: it is evidence to add seasonal AR/MA candidates to the candidate set, not proof that a seasonal difference is required.</p>
 </section>
 <section id="pick-a-working-model" class="level3">
 <h3 class="anchored" data-anchor-id="pick-a-working-model">4.7.5 Pick a Working Model</h3>
@@ -3287,7 +3287,7 @@ AIC=-607.67   AICc=-607.51   BIC=-575.62</code></pre>
 </div>
 </div>
 </div>
-<p>Look at the residual ACF. The low lags are quiet — the working ARMA has absorbed the short-run dynamics. But see that negative spike at lag 12, with an echo at lag 24? That is a seasonal clue, not a verdict. Our non-seasonal ARMA may not explain it. That is the cliffhanger for Module 5: residual diagnostics will tell us whether the pattern is material, and seasonal modeling will separate two distinct possibilities — seasonal AR/MA dynamics versus a seasonal unit root. A lag-12 spike alone does <strong>not</strong> justify seasonal differencing; <span class="math inline">\(D=1\)</span> needs unit-root evidence.</p>
+<p>Look at the residual ACF. The low lags are quiet — the working ARMA has absorbed the short-run dynamics. But see that negative spike at lag 12, with an echo at lag 24? That is a hint of seasonal structure, not a verdict. Our non-seasonal ARMA may not explain it. That is the cliffhanger for Module 5: residual diagnostics will tell us whether the pattern is material, and seasonal modeling will separate two distinct possibilities — seasonal AR/MA dynamics versus a seasonal unit root. A lag-12 spike alone does <strong>not</strong> justify seasonal differencing; <span class="math inline">\(D=1\)</span> needs unit-root evidence.</p>
 <hr>
 </section>
 </section>
@@ -3296,10 +3296,10 @@ AIC=-607.67   AICc=-607.51   BIC=-575.62</code></pre>
 <p>Three important topics remain open after this module. All of them will be addressed before the midpoint of the course.</p>
 <ol type="1">
 <li><p><strong>Residual diagnostics.</strong> We previewed the residual ACF in Section 4.7.6 but did not interpret it formally. The tools for doing so — the Ljung-Box <span class="math inline">\(Q\)</span> statistic, residual ACF/PACF reading, and the logic of “residuals should be white noise if the model is correct” — are the subject of Module 5.</p></li>
-<li><p><strong>Seasonality.</strong> The lag-12 spike in the UNRATE residual ACF is a clue that seasonal structure may still be present in our non-seasonal ARMA fit. Module 5 introduces the SARIMA<span class="math inline">\((p,d,q)(P,D,Q)_s\)</span> specification and separates seasonal AR/MA dynamics from seasonal differencing. The latter is used only when evidence supports a seasonal unit root.</p></li>
+<li><p><strong>Seasonality.</strong> The lag-12 spike in the UNRATE residual ACF is a sign that seasonal structure may still be present in our non-seasonal ARMA fit. Module 5 introduces the SARIMA<span class="math inline">\((p,d,q)(P,D,Q)_s\)</span> specification and separates seasonal AR/MA dynamics from seasonal differencing. The latter is used only when evidence supports a seasonal unit root.</p></li>
 <li><p><strong>Forecasting.</strong> The Box-Jenkins workflow ends with “forecast using the fitted model.” We have not done that yet. Forecasting methods, out-of-sample evaluation, and forecast comparison are Block 4.</p></li>
 </ol>
-<p>After Module 5, students will be fitting the full (S)ARIMA<span class="math inline">\((p,d,q)(P,D,Q)_s\)</span> specification end-to-end, with diagnostics to confirm the fit. After Block 4, they will be forecasting with it. The workflow we built in this module — identify, estimate, score, check — is the template for all of that. The only thing that changes is the range of models on the suspect list.</p>
+<p>After Module 5, students will be fitting the full (S)ARIMA<span class="math inline">\((p,d,q)(P,D,Q)_s\)</span> specification end-to-end, with diagnostics to confirm the fit. After Block 4, they will be forecasting with it. The workflow we built in this module — identify, estimate, score, check — is the template for all of that. The only thing that changes is the range of models in the candidate set.</p>
 <hr>
 </section>
 <section id="common-pitfalls-and-misconceptions" class="level2">
@@ -3361,7 +3361,7 @@ AIC=-607.67   AICc=-607.51   BIC=-575.62</code></pre>
 <p>Module 4 hands Module 5 a <strong>fitted but unchecked model</strong> selected under an explicit mean policy. Its residual ACF is already whispering that something may be missing at lag 12. Module 5 tests that whisper rather than treating it as a verdict:</p>
 <ul>
 <li><strong>Residual diagnostics.</strong> The Ljung-Box <span class="math inline">\(Q\)</span> test and residual correlogram reading make “do the residuals look like white noise?” a testable question rather than an eyeball call. If your model is right, <span class="math inline">\(e_t\)</span> should behave like <span class="math inline">\(\epsilon_t\)</span> — that is the payoff of the notation distinction we have carried since Module 1.</li>
-<li><strong>Seasonality and SARIMA.</strong> The lag-12 clue motivates seasonal AR/MA candidates. Seasonal differencing is a separate decision and requires evidence of a seasonal unit root. The <span class="math inline">\((p,d,q)(P,D,Q)_s\)</span> notation is the last block of sliders on the mixing board.</li>
+<li><strong>Seasonality and SARIMA.</strong> The lag-12 spike motivates seasonal AR/MA candidates. Seasonal differencing is a separate decision and requires evidence of a seasonal unit root. The <span class="math inline">\((p,d,q)(P,D,Q)_s\)</span> notation is the last block of sliders on the mixing board.</li>
 </ul>
 <p>After that, the Box-Jenkins loop is complete — identify, estimate, score, <em>check</em> — and Block 4 puts the surviving model to work forecasting.</p>
 </section>
