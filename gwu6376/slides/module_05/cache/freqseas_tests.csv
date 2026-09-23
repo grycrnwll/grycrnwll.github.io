@@ -1,0 +1,5 @@
+"series","statistic","p","critical","M","N1","N0","whitener_d","whitener_ar_order","decision","post_p_from_seas_adjust"
+"UNRATENSA (raw)",122.212937992718,0,2.19118787453679,19,113,240,1,2,"reject: seasonal",NA
+"UNRATE (published SA)",0.436141476003605,0.233367589843284,2.19118787453679,19,113,240,1,3,"fail to reject",NA
+"X-13 default output",-1.37796026977763,0.651288815576685,2.19118787453679,19,113,240,1,3,"fail to reject",NA
+"classic SSI output",-2.71663866689693,0.876899096990234,2.19118787453679,19,113,240,1,2,"fail to reject",0.876899096990234

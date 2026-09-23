@@ -1,0 +1,2 @@
+"seed","T","manual_model","manual_phi","manual_theta","manual_se_ar1","manual_se_ma1","manual_sigma2","manual_logLik","manual_AIC","manual_AICc","manual_BIC","automatic_model","automatic_AICc","unrate_automatic_model","unrate_automatic_AICc"
+1985,500,"ARMA(1,1)",0.539775062508298,0.426544757447379,0.0500582243105633,0.0573606886488933,0.985529276185717,-705.302969453943,1416.60593890789,1416.65432600466,1429.24976320315,"ARMA(2,2)",1415.84270203891,"ARMA(1,2)",-549.276659094274

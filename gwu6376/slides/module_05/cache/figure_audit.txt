@@ -1,0 +1,77 @@
+window_levels=720
+window_differences=719
+band_1.96_over_sqrtT=0.0731
+band_2_over_sqrtT=0.0746
+callback_rho12_24_36=-0.145/-0.125/-0.130
+callback_LB10=Q=3.76 df=7 p=0.807
+callback_LB24=Q=46.1 df=21 p=0.0012
+nsa_diff_rho12_24_36=0.804/0.777/0.742
+sa_diff_rho12=-0.089
+dummies_R2=0.721
+dummies_month_means=Jan=0.903 Feb=-0.068 Mar=-0.263 Apr=-0.517 May=-0.108 Jun=0.635 Jul=-0.157 Aug=-0.260 Sep=-0.183 Oct=-0.140 Nov=0.110 Dec=0.018
+dummies_resid_rho12_24_36=0.350/0.298/0.223
+dummies_resid_low_lags_outside_band=2;3;5;7;11
+dummies_LB24_fitdf0=Q=261.5 df=24 p=0
+dummies_arma_resid_rho12_24_36=0.364/0.318/0.231
+dummies_arma_LB10=p=0.298
+dummies_arma_LB24=p=0
+dummies_stability_F=F(11,695)=12.47 p=1.15e-21
+dummies_june_by_half=0.84 -> 0.43
+dummies_july_by_half=-0.33 -> 0.02
+gallery_seasonal_AR_rho12_24_36=0.73/0.51/0.34
+gallery_seasonal_RW_rho12_24_36=0.94/0.89/0.84
+airline_theta1_Theta1=0.066/-0.777
+airline_LB10_LB24_p=1.54e-13/2.48e-11
+airline_resid_rho2_5=0.21/0.14/0.12/0.11
+D0_Phi1=0.9939
+D0_sar_root_modulus=1.0061
+D0_LB10_LB24_p=0.967/0.761
+auto_arima_spec=(2,0,2)(2,1,2)[12]
+auto_arima_n_coef=8
+auto_arima_LB10_LB24_p=0.266/0.465
+winner_spec=(1,1,2)(0,1,1)[12]
+winner_coefs=ar1=0.783; ma1=-0.752; ma2=0.158; sma1=-0.753
+winner_Theta1=-0.753
+winner_LB10_LB24_p=0.881/0.424
+winner_vs_airline_delta_AIC_BIC=50.5/41.4
+d1D0_winner_AIC=(1,1,2)(1,0,1)[12]
+adjusted_airline_Theta1=-0.999993
+x13_arima_model=(1 1 2)(0 1 1)
+x13_corr=0.9985
+x13_mean_abs_diff=0.065
+x13_max_abs_diff=0.373
+x13_max_abs_diff_date=1976-02
+x13_share_within_0.1=0.803
+periodogram_nsa_tallest_ordinate_omega_over_pi=0.3333
+periodogram_nsa_tallest_ordinate_nearest_harmonic=pi/3
+delta_test_1_series=UNRATENSA (raw)
+delta_test_1_statistic_p=122.2129/0
+delta_test_1_M_whitener=M=19 d=1 AR(2) critical=2.1912
+delta_test_2_series=UNRATE (published SA)
+delta_test_2_statistic_p=0.4361/0.233
+delta_test_2_M_whitener=M=19 d=1 AR(3) critical=2.1912
+delta_test_3_series=X-13 default output
+delta_test_3_statistic_p=-1.3780/0.651
+delta_test_3_M_whitener=M=19 d=1 AR(3) critical=2.1912
+delta_test_4_series=classic SSI output
+delta_test_4_statistic_p=-2.7166/0.877
+delta_test_4_M_whitener=M=19 d=1 AR(2) critical=2.1912
+ssi_classic_post_p=0.877
+ssi_default_post_p=2.71e-10
+ssi_vs_published_corr_excl_head=0.9969
+ssi_vs_published_mean_abs_diff_excl_head=0.298
+epilogue_after_rho12_24_36=0.028/-0.024/-0.065
+epilogue_after_LB10_LB24_p=0.549/0.327
+epilogue_after_coefs=ar1=0.9074; ma1=-0.9352; ma2=0.2127; sar1=0.5255; sma1=-0.7911
+dip_1=UNRATE (published) overall=0.752 bins_below_1=6
+dip_2=X-13 default output overall=0.818 bins_below_1=5
+dip_3=UNRATENSA (raw) overall=18.395 bins_below_1=0
+whitened_resid_rho12_published=-0.113
+R_version=R version 4.3.2 (2023-10-31 ucrt)
+pkg_forecast=8.23.0
+pkg_ggplot2=4.0.3
+pkg_patchwork=1.3.2.9000
+pkg_seasonal=1.10.0
+pkg_x13binary=1.1.61.1
+pkg_freqseas=0.0.0.9000
+seed=6376
