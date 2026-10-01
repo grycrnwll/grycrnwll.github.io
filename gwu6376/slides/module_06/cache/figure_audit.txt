@@ -1,0 +1,149 @@
+series=log(A939RX0Q048SBEA), natural log
+vintage=BEA release of 2026-09-30
+vintage_last_value_2026Q2=71212
+window=1990 Q1 to 2006 Q4
+T_levels=68
+level_first_last=40361/55216
+log_first_last=10.6056/10.9190
+adf_lag_choice=BIC max 8: 2; AIC max 8: 2; BIC max 4: 2; AIC max 4: 2
+adf_primary_cv_1_5_10=-4.04/-3.45/-3.15
+battery_adf_bic=stat=-3.1128 cv05=-3.45 lag=2 n_reg=65 reject=FALSE
+battery_adf_aic=stat=-3.1128 cv05=-3.45 lag=2 n_reg=65 reject=FALSE
+battery_adf_k0=stat=-2.9391 cv05=-3.45 lag=0 n_reg=67 reject=FALSE
+battery_adf_k1=stat=-3.0642 cv05=-3.45 lag=1 n_reg=66 reject=FALSE
+battery_adf_k2=stat=-3.1128 cv05=-3.45 lag=2 n_reg=65 reject=FALSE
+battery_adf_k4=stat=-2.0240 cv05=-3.45 lag=4 n_reg=63 reject=FALSE
+battery_adf_k8=stat=-1.9513 cv05=-3.45 lag=8 n_reg=59 reject=FALSE
+battery_adf_bic_trimmed_max8=stat=-1.9130 cv05=-3.45 lag=2 n_reg=59 reject=FALSE
+battery_adf_bic_trimmed_max4=stat=-1.8036 cv05=-3.45 lag=2 n_reg=63 reject=FALSE
+battery_adf_phi3=stat=4.9043 cv05=6.49 lag=2 n_reg=65 reject=FALSE
+battery_kpss_short=stat=0.1500 cv05=0.146 lag=3 n_reg=NA reject=TRUE
+battery_kpss_long=stat=0.0852 cv05=0.146 lag=10 n_reg=NA reject=FALSE
+battery_dfgls_k0=stat=-1.3864 cv05=-3.03 lag=0 n_reg=NA reject=FALSE
+battery_dfgls_k1=stat=-1.6662 cv05=-3.03 lag=1 n_reg=NA reject=FALSE
+battery_dfgls_k2=stat=-1.9646 cv05=-3.03 lag=2 n_reg=NA reject=FALSE
+battery_dfgls_k4=stat=-2.1080 cv05=-3.03 lag=4 n_reg=NA reject=FALSE
+battery_dfgls_k8=stat=-1.6898 cv05=-3.03 lag=8 n_reg=NA reject=FALSE
+battery_pp_short=stat=-3.0335 cv05=-3.476856 lag=3 n_reg=NA reject=FALSE
+battery_pp_long=stat=-3.1991 cv05=-3.476856 lag=10 n_reg=NA reject=FALSE
+battery_adf_bic_diff=stat=-3.8325 cv05=-2.89 lag=1 n_reg=65 reject=TRUE
+battery_adf_bic_trimmed_max8_diff=stat=-3.7862 cv05=-2.89 lag=1 n_reg=58 reject=TRUE
+battery_kpss_short_diff=stat=0.2139 cv05=0.463 lag=3 n_reg=NA reject=FALSE
+battery_adf_bic_context=stat=-3.9552 cv05=-3.43 lag=2 n_reg=241 reject=TRUE
+battery_adf_bic_trimmed_max8_context=stat=-4.0699 cv05=-3.43 lag=2 n_reg=235 reject=TRUE
+battery_dfgls_kbic_context=stat=-3.9793 cv05=-2.89 lag=2 n_reg=NA reject=TRUE
+detrended_trend_slope_per_quarter=0.00541976
+detrended_trend_growth_annual_pct=2.16791
+detrended_sd_y=0.108202
+detrended_sd_dy=0.00535696
+detrended_sd_u=0.0149186
+detrended_ratio_raw=0.0495087
+detrended_ratio_detrended=0.359079
+detrended_ratio_threshold=0.5
+detrended_ar1_u=0.878969
+detrended_half_life_quarters=5.37302
+detrended_half_life_years=1.34325
+detrended_u_min_pct=-1.91512
+detrended_u_max_pct=4.15818
+detrended_u_last_pct=-0.815365
+detrended_zero_crossings=7
+detrended_dy_mean_annual_pct=1.87098
+detrended_T=68
+acf_log_level_lag_4_8_16=0.850/0.670/0.337
+acf_deviations_lag_4_8_16=0.438/0.064/-0.323
+acf_band_1.96_over_sqrtT=0.2377
+adf_diff_lag_choice=BIC max 8: 1; AIC max 8: 1; BIC max 4: 1
+diff_adf_bic_diff=stat=-3.8325 cv05=-2.89 lag=1 n_reg=65 reject=TRUE
+diff_adf_aic_diff=stat=-3.8325 cv05=-2.89 lag=1 n_reg=65 reject=TRUE
+diff_adf_k0_diff=stat=-5.8806 cv05=-2.89 lag=0 n_reg=66 reject=TRUE
+diff_adf_k1_diff=stat=-3.8325 cv05=-2.89 lag=1 n_reg=65 reject=TRUE
+diff_adf_k2_diff=stat=-4.3574 cv05=-2.89 lag=2 n_reg=64 reject=TRUE
+diff_adf_k4_diff=stat=-3.4697 cv05=-2.89 lag=4 n_reg=62 reject=TRUE
+diff_adf_k8_diff=stat=-2.1635 cv05=-2.89 lag=8 n_reg=58 reject=FALSE
+diff_adf_bic_trimmed_max8_diff=stat=-3.7862 cv05=-2.89 lag=1 n_reg=58 reject=TRUE
+diff_adf_bic_trimmed_max4_diff=stat=-4.1111 cv05=-2.89 lag=1 n_reg=62 reject=TRUE
+diff_kpss_short_diff=stat=0.2139 cv05=0.463 lag=3 n_reg=NA reject=FALSE
+diff_kpss_long_diff=stat=0.1664 cv05=0.463 lag=10 n_reg=NA reject=FALSE
+diff_dfgls_k0_diff=stat=-5.2757 cv05=-1.95 lag=0 n_reg=NA reject=TRUE
+diff_dfgls_k1_diff=stat=-3.2811 cv05=-1.95 lag=1 n_reg=NA reject=TRUE
+diff_dfgls_k2_diff=stat=-3.3657 cv05=-1.95 lag=2 n_reg=NA reject=TRUE
+diff_dfgls_k4_diff=stat=-2.3521 cv05=-1.95 lag=4 n_reg=NA reject=TRUE
+diff_dfgls_k8_diff=stat=-1.3195 cv05=-1.95 lag=8 n_reg=NA reject=FALSE
+diff_pp_short_diff=stat=-5.9041 cv05=-2.905504 lag=3 n_reg=NA reject=TRUE
+diff_pp_long_diff=stat=-6.0553 cv05=-2.905504 lag=10 n_reg=NA reject=TRUE
+diffstat_T=67
+diffstat_mean_pct_per_quarter=0.467744
+diffstat_mean_annual_pct=1.87098
+diffstat_sd_dy_pct=0.535696
+diffstat_sd_dy=0.00535696
+diffstat_sd_d2y=0.00635304
+diffstat_ratio_second_over_first=1.18594
+diffstat_ratio_threshold=0.5
+diffstat_rho1=0.302286
+diffstat_acf_band=0.239452
+acf_growth_lag_1_to_8=0.302/0.294/0.066/0.143/-0.020/0.067/-0.046/-0.081
+pacf_growth_lag_1_to_8=0.302/0.223/-0.081/0.093/-0.081/0.046/-0.049/-0.113
+ic_grid_fits=42 fitted, 2 screened out
+ic_grid_screened_keys=arima113d,arima212d
+ic_winner_AIC=arima210d
+ic_winner_AICc=arima210d
+ic_winner_BIC=arima110d
+ic_winner_HQIC=arima210d
+model_arima212d=k=6 loglik=261.6244 AIC=-511.2488 AICc=-509.8488 BIC=-498.0206 HQIC=-506.0144 LB10 Q=8.213 p=0.2229 LB24 Q=18.509 p=0.5539 roots ar=1.0775 ma=1.0000
+model_arima212d_lb_both_68=LB10 Q=8.654 p=0.1940 LB24 Q=19.347 p=0.4994
+model_arima212d_coef=ar1=1.8296(0.1402) ar2=-0.8614(0.1347) ma1=-1.6522(0.2239) ma2=0.6522(0.2210) drift=0.0051(0.0004)
+model_arima211d=k=5 loglik=261.2798 AIC=-512.5597 AICc=-511.5761 BIC=-501.5362 HQIC=-508.1977 LB10 Q=5.143 p=0.6425 LB24 Q=18.763 p=0.6003 roots ar=1.2772 ma=1.7140
+model_arima211d_lb_both_68=LB10 Q=3.920 p=0.7889 LB24 Q=17.760 p=0.6641
+model_arima211d_coef=ar1=-0.3066(0.3163) ar2=0.3729(0.1173) ma1=0.5834(0.3371) drift=0.0046(0.0010)
+model_arima111d=k=4 loglik=260.2810 AIC=-512.5621 AICc=-511.9169 BIC=-503.7433 HQIC=-509.0725 LB10 Q=6.822 p=0.5560 LB24 Q=18.763 p=0.6599 roots ar=1.3525 ma=2.1002
+model_arima111d_lb_both_68=LB10 Q=7.111 p=0.5247 LB24 Q=19.225 p=0.6314
+model_arima111d_coef=ar1=0.7394(0.1979) ma1=-0.4761(0.2414) drift=0.0045(0.0012)
+model_arima210d=k=4 loglik=260.8159 AIC=-513.6318 AICc=-512.9867 BIC=-504.8131 HQIC=-510.1422 LB10 Q=5.886 p=0.6600 LB24 Q=19.614 p=0.6072 roots ar=1.6334 ma=NA
+model_arima210d_lb_both_68=LB10 Q=6.145 p=0.6310 LB24 Q=20.286 p=0.5651
+model_arima210d_coef=ar1=0.2317(0.1178) ar2=0.2330(0.1202) drift=0.0046(0.0011)
+model_arima110d=k=3 loglik=258.9978 AIC=-511.9956 AICc=-511.6146 BIC=-505.3815 HQIC=-509.3784 LB10 Q=9.364 p=0.4043 LB24 Q=19.668 p=0.6619 roots ar=3.3243 ma=NA
+model_arima110d_lb_both_68=LB10 Q=7.613 p=0.5736 LB24 Q=17.742 p=0.7713
+model_arima110d_coef=ar1=0.3008(0.1159) drift=0.0047(0.0009)
+ic_residuals_json=written; sentinel cache/.ic_residuals_ready created
+penalty_T=75
+penalty_per_parameter_BIC_HQIC_AIC=4.3175/2.9253/2.0000
+penalty_at_k6_AIC_AICc_BIC_HQIC=12.0000/13.2353/25.9049/17.5521
+ar1_example=phi=0.7 sigma2=1 T=60 h=1..20; series = widget shocks, base seed 6387, draw 1 (widgets/ar1fc_shocks.csv)
+ar1_yT=1.551767
+ar1_gamma0=1.960784
+ar1_point_h1_2_3_5_20=1.0862/0.7604/0.5323/0.2608/0.0012
+ar1_var_h1_5_20=1.0000/1.9054/1.9608
+ar1_95_bounds_h1=-0.8738/3.0462
+ar1_95_bounds_h20=-2.7433/2.7458
+ar1_realised_inside_95_80=18/17 of 20
+ar1_z_used_80_95=1.28/1.96
+ar1_z_qnorm_80_95=1.281552/1.959964
+ar1_bound_gap_vs_qnorm_max_80_95=0.002173/0.000050
+ar1_crosscheck_kalman_maxabs_pred_var=5.55e-17/4.44e-16
+ar1_crosscheck_forecast_maxabs_mean_scaledhw=5.55e-17/8.88e-16
+ar1_crosscheck_widget_maxabs_yT_fut_point=9.3e-13/4.54e-12/4.65e-12
+ar1_forecast_pkg_sigma2_estimate=0.765884
+ar1_rolling_rmse_one_two_single_mean=1.099/1.291/1.491/1.416
+ar1_rolling_rmse_ranking=one_step<two_step<mean<single_origin
+ar1_variance_share_explained_h1_2_4_8=0.4900/0.2401/0.0576/0.0033
+ar1_variance_share_unexplained_h1_2_4_8=0.5100/0.7599/0.9424/0.9967
+ar1_half_variance_horizon_phi0.7_0.95=0.972/6.757
+ar1_single_path_within_0.2_of_mu_from_h=6
+ar1_single_path_within_0.1_of_mu_from_h=8
+ar1_path_figures=images/ar1_observed.png (observed only) and images/ar1_point_path.png (with the path), same title, same axis limits
+ar1_rolling_figures=images/ar1_rolling_base.png, ar1_rolling_onestep.png, ar1_rolling_twostep.png: one title, one set of axis limits, legend inside the panel
+loss_part_md5_loss_audit.txt=dad4d4cfb71e5c8a47a7962c152630d5
+loss_part_md5_loss_curves.csv=267f1fe39dda984678550f8b915bea32
+loss_part_md5_loss_marginal.csv=3f3139e11ffb33c4b0383ffbb6547882
+loss_part_md5_loss_params.csv=1ee2e7325fc23fd308979934f0826d20
+loss_part_md5_loss_target_stats.csv=d0beacee70f6884a7a863e622e47284c
+loss_part_md5_loss_target_table.csv=4aa0703855fcda72073bc8475dd96a8e
+loss_part_md5_loss_target_tracks.csv=2874ae55c0762dd2927244566f0d601c
+loss_part_md5_loss_marginal.png=4f2c58d48c31ae8b010ab28c404ac5de
+loss_part_md5_loss_shapes.png=9a922d375651db138d22890c22688783
+loss_part_md5_loss_target_tracks.png=acb90946db9319f8e7f6968ace04af6e
+R_version=R version 4.3.2 (2023-10-31 ucrt)
+pkg_urca=1.3.4
+pkg_ggplot2=4.0.3
+pkg_patchwork=1.3.2.9000
+seed=6376

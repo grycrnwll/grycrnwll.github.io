@@ -1,0 +1,9 @@
+"key","value"
+"delta",2
+"alpha",0.75
+"e_min",-4
+"e_max",4
+"e_step",0.01
+"stretch_from",401
+"stretch_to",460
+"stretch_len",60
