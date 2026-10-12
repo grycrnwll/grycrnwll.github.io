@@ -32,7 +32,7 @@ body {
   color: var(--fg);
   font-size: 16px;
   line-height: 1.5;
-  min-height: 100vh;
+  height: 100vh;   /* fit the projector screen: no page scroll */
   display: flex;
   flex-direction: column;
 }
@@ -89,7 +89,7 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px 32px;
+  padding: 10px 32px;
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
 }
@@ -122,11 +122,12 @@ body {
   flex: 1;
   display: grid;
   grid-template-columns: 400px 1fr 360px;
-  gap: 24px;
-  padding: 24px 32px;
+  gap: 20px;
+  padding: 16px 32px;
   max-width: 1600px;
   width: 100%;
   margin: 0 auto;
+  min-height: 0;
 }
 
 /* ── Panels ── */
@@ -135,7 +136,8 @@ body {
 .panel-right {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  min-height: 0;
 }
 
 /* ── Card mixin ── */
@@ -143,7 +145,7 @@ body {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 20px;
+  padding: 14px 18px;
 }
 
 .card-title {
@@ -152,19 +154,21 @@ body {
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
 
 /* ── Poster ── */
 .poster-wrap {
   display: flex;
   justify-content: center;
+  flex: 1 1 0;      /* poster takes whatever height is left */
+  min-height: 160px;
 }
 
 .poster-placeholder {
-  width: 350px;
+  height: 100%;
+  aspect-ratio: 2 / 3;
   max-width: 100%;
-  height: 520px;
   background: #2a2a3e;
   border-radius: 12px;
   box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
@@ -178,8 +182,10 @@ body {
 }
 
 .poster-img {
-  width: 350px;
+  height: 100%;
+  width: auto;
   max-width: 100%;
+  object-fit: contain;
   border-radius: 12px;
   box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
   display: block;
@@ -189,9 +195,10 @@ body {
 .clue-row {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
+  gap: 12px;
+  padding: 4px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .clue-row:last-child { border-bottom: none; }
@@ -210,8 +217,8 @@ body {
 /* ── Year input ── */
 #year-input {
   width: 100%;
-  font-size: 24px;
-  padding: 12px 16px;
+  font-size: 22px;
+  padding: 8px 16px;
   background: var(--input-bg);
   color: var(--fg);
   border: 2px solid var(--border);
@@ -244,7 +251,7 @@ body {
 
 /* ── Guesses list ── */
 .guesses-container {
-  max-height: 150px;
+  max-height: 64px;
   overflow-y: auto;
   display: flex;
   flex-wrap: wrap;
@@ -266,15 +273,14 @@ body {
 /* ── Buttons ── */
 .btn-stack {
   display: flex;
-  flex-direction: column;
   gap: 8px;
 }
 
 .btn {
   display: block;
   width: 100%;
-  padding: 12px 20px;
-  font-size: 16px;
+  padding: 8px 10px;
+  font-size: 15px;
   font-weight: 600;
   font-family: inherit;
   border-radius: 10px;
@@ -331,7 +337,7 @@ body {
 
 .chart-wrap {
   flex: 1;
-  min-height: 350px;
+  min-height: 0;
   position: relative;
 }
 
@@ -345,7 +351,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 10px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border);
   font-size: 18px;
 }
@@ -412,6 +418,9 @@ body {
   max-width: 1100px;
   margin: 0 auto;
   width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 #summary-screen.active {
@@ -495,7 +504,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 32px;
+  padding: 8px 32px;
   border-top: 1px solid var(--border);
   font-size: 13px;
   color: var(--muted);
@@ -516,28 +525,27 @@ body {
 }
 
 /* ── Responsive ── */
+/* Narrow or very short windows: fall back to normal page scrolling */
+@media (max-width: 1100px), (max-height: 620px) {
+  body { height: auto; min-height: 100vh; }
+  .poster-wrap { flex: none; }
+  .poster-img { height: 360px; }
+  .poster-placeholder { height: 360px; }
+  .chart-wrap { min-height: 350px; }
+}
+
 @media (max-width: 1100px) {
   .main-content {
     grid-template-columns: 1fr;
     padding: 16px;
   }
 
-  .poster-placeholder,
-  .poster-img {
-    width: 280px;
-    height: auto;
-  }
-
-  .poster-placeholder {
-    height: 420px;
-  }
-
   .header {
-    padding: 14px 16px;
+    padding: 10px 16px;
   }
 
   .footer {
-    padding: 14px 16px;
+    padding: 8px 16px;
   }
 }
 </style>
@@ -583,14 +591,11 @@ body {
       max="2030"
     >
 
-    <!-- Guesses list -->
-    <div class="guesses-container" id="guesses-list"></div>
-
     <!-- Buttons -->
     <div class="btn-stack">
-      <button class="btn btn-primary" id="reveal-btn" disabled>Reveal Answer</button>
-      <button class="btn btn-outline" id="next-btn" disabled>Next Movie</button>
-      <button class="btn btn-subtle" id="reset-btn">Reset Guesses</button>
+      <button class="btn btn-primary" id="reveal-btn" disabled>Reveal</button>
+      <button class="btn btn-outline" id="next-btn" disabled>Next</button>
+      <button class="btn btn-subtle" id="reset-btn">Reset</button>
     </div>
   </div>
 
@@ -600,6 +605,7 @@ body {
     <div class="chart-wrap">
       <canvas id="histogram-canvas"></canvas>
     </div>
+    <div class="guesses-container" id="guesses-list"></div>
   </div>
 
   <!-- RIGHT PANEL -->
@@ -699,7 +705,6 @@ body {
   const API_BASE     = 'https://api.themoviedb.org/3';
   const IMG_BASE     = 'https://image.tmdb.org/t/p/w500';
   const BTTF_ID      = 105;
-  const CURRENT_YEAR = 2026;
 
   // ─── State ──────────────────────────────────────────────────────
   let sessionMovies    = [];
@@ -791,36 +796,46 @@ body {
     return /\b(19|20)\d{2}\b/.test(text);
   }
 
+  // ─── Curated pools (TMDb IDs) ──────────────────────────────────
+  // Hand-picked, widely seen titles. Edit the IDs here to change the pool.
+  const POOL_70S = [
+    11,     // Star Wars (1977)
+    578,    // Jaws (1975)
+    601,    // E.T. the Extra-Terrestrial (1982)
+    85,     // Raiders of the Lost Ark (1981)
+    620,    // Ghostbusters (1984)
+    744,    // Top Gun (1986)
+    621,    // Grease (1978)
+    2108,   // The Breakfast Club (1985)
+    9377,   // Ferris Bueller's Day Off (1986)
+    2493,   // The Princess Bride (1987)
+  ];
+  const POOL_90S = [
+    771,    // Home Alone (1990)
+    329,    // Jurassic Park (1993)
+    8587,   // The Lion King (1994)
+    862,    // Toy Story (1995)
+    597,    // Titanic (1997)
+    603,    // The Matrix (1999)
+    671,    // Harry Potter and the Sorcerer's Stone (2001)
+    808,    // Shrek (2001)
+    12,     // Finding Nemo (2003)
+    155,    // The Dark Knight (2008)
+  ];
+  const POOL_MODERN = [
+    70160,  // The Hunger Games (2012)
+    109445, // Frozen (2013)
+    157336, // Interstellar (2014)
+    354912, // Coco (2017)
+    284054, // Black Panther (2018)
+    299534, // Avengers: Endgame (2019)
+    634649, // Spider-Man: No Way Home (2021)
+    361743, // Top Gun: Maverick (2022)
+    346698, // Barbie (2023)
+    872585, // Oppenheimer (2023)
+  ];
+
   // ─── TMDb Data Engine ──────────────────────────────────────────
-  async function fetchMoviesByEra(startYear, endYear, apiKey) {
-    const movies = [];
-    const seenIds = new Set();
-    for (let page = 1; page <= 5; page++) {
-      const url = `${API_BASE}/discover/movie?api_key=${apiKey}`
-        + `&sort_by=popularity.desc`
-        + `&primary_release_date.gte=${startYear}-01-01`
-        + `&primary_release_date.lte=${endYear}-12-31`
-        + `&vote_count.gte=500`
-        + `&page=${page}`;
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error(`TMDb discover failed (page ${page}): ${resp.status}`);
-      const data = await resp.json();
-      for (const m of data.results) {
-        if (!seenIds.has(m.id)) {
-          seenIds.add(m.id);
-          movies.push({
-            id:           m.id,
-            title:        m.title,
-            release_date: m.release_date,
-            poster_path:  m.poster_path,
-            popularity:   m.popularity,
-          });
-        }
-      }
-      if (page >= data.total_pages) break;
-    }
-    return movies.slice(0, 100);
-  }
 
   async function fetchMovieDetails(movieId, apiKey) {
     const url = `${API_BASE}/movie/${movieId}?api_key=${apiKey}&append_to_response=credits`;
@@ -884,18 +899,10 @@ body {
 
   async function selectSessionMovies(apiKey) {
     const bttf = await fetchMovieDetails(BTTF_ID, apiKey);
-    const usedIds = new Set([BTTF_ID]);
-    const [pool70s, pool90s, poolModern] = await Promise.all([
-      fetchMoviesByEra(1970, 1990, apiKey),
-      fetchMoviesByEra(1990, 2010, apiKey),
-      fetchMoviesByEra(2011, CURRENT_YEAR, apiKey),
-    ]);
-    const [pick70s] = pickRandom(pool70s, 1, usedIds);
-    usedIds.add(pick70s.id);
-    const [pick90s] = pickRandom(pool90s, 1, usedIds);
-    usedIds.add(pick90s.id);
-    const modernPicks = pickRandom(poolModern, 2, usedIds);
-    modernPicks.forEach(m => usedIds.add(m.id));
+    const asItems = ids => ids.map(id => ({ id }));
+    const [pick70s] = pickRandom(asItems(POOL_70S), 1);
+    const [pick90s] = pickRandom(asItems(POOL_90S), 1);
+    const modernPicks = pickRandom(asItems(POOL_MODERN), 2);
     const [details70s, details90s, detailsM1, detailsM2] = await Promise.all([
       fetchMovieDetails(pick70s.id, apiKey),
       fetchMovieDetails(pick90s.id, apiKey),
@@ -1071,7 +1078,7 @@ body {
     // Buttons
     revealBtn.disabled = true;
     nextBtn.disabled = true;
-    nextBtn.textContent = (index === 4) ? 'View Summary' : 'Next Movie';
+    nextBtn.textContent = (index === 4) ? 'Summary' : 'Next';
 
     // Input
     yearInput.disabled = false;
