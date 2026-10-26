@@ -56,3 +56,7 @@ details.abs > summary::before {
 }
 details.abs[open] > summary::before { content: "−"; } /* U+2212 */
 details.abs > *:not(summary) { margin-top: .5rem; }
+/* Working papers table: theme table styling, scrolls sideways on narrow screens */
+.wp-table-wrap { overflow-x: auto; margin-bottom: 1em; }
+.wp-table .wp-nowrap { white-space: nowrap; }
+.wp-anchor { scroll-margin-top: 4em; }

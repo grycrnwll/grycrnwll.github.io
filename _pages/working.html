@@ -7,7 +7,37 @@ author_profile: true
 
 {% include base_path %}
 
+{% assign papers = site.working | sort: "date" | reverse %}
 
-{% for post in site.working %}
-{% include archive-single.html %}
+<div class="wp-table-wrap">
+<table class="wp-table" id="wp-top">
+  <thead>
+    <tr><th>#</th><th>Title</th><th>Drafted</th><th>Paper</th><th>Slides</th><th>Replication</th></tr>
+  </thead>
+  <tbody>
+  {% for post in papers %}
+    {% assign slug = post.url | split: "/" | last %}
+    <tr>
+      <td class="wp-nowrap">{{ forloop.index }}</td>
+      <td>{% if post.abstract %}<a href="#abs-{{ slug }}">{{ post.title }}</a>{% else %}{{ post.title }}{% endif %}</td>
+      <td class="wp-nowrap">{{ post.date | date: "%Y" }}</td>
+      <td class="wp-nowrap">{% if post.paperurl %}<a href="{{ post.paperurl }}">PDF</a>{% endif %}</td>
+      <td class="wp-nowrap">{% if post.slidesurl %}<a href="{{ post.slidesurl }}">Slides</a>{% endif %}</td>
+      <td class="wp-nowrap">{% if post.replicationurl %}<a href="{{ post.replicationurl }}">Replication</a>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2 class="archive__subtitle">Abstracts</h2>
+{% for post in papers %}
+  {% if post.abstract %}
+    {% assign slug = post.url | split: "/" | last %}
+    <div class="list__item">
+      <h2 class="archive__item-title wp-anchor" id="abs-{{ slug }}">{{ forloop.index }}. {{ post.title }}</h2>
+      <div class="archive__item-excerpt">{{ post.abstract | markdownify }}</div>
+      <p><small><a href="#wp-top">&uarr; Back to table</a></small></p>
+    </div>
+  {% endif %}
 {% endfor %}
